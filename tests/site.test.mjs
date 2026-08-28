@@ -7,6 +7,7 @@ const read = (path) => readFileSync(new URL(path, root), 'utf8');
 const app = () => read('design-extract/site-minimalist-portoflio/project/waniushka-app.jsx');
 const components = () => read('design-extract/site-minimalist-portoflio/project/waniushka-components.jsx');
 const html = () => read('design-extract/site-minimalist-portoflio/project/Waniushka%20Portfolio.html');
+const buildScript = () => read('precompile.mjs');
 
 test('the public contact data uses the confirmed address and gift wording', () => {
   assert.match(components(), /email:\s*'hello@vjmvjmvjm\.com'/);
@@ -71,4 +72,11 @@ test('the generated brand asset set is complete', () => {
   ]) {
     assert.equal(existsSync(new URL(path, root)), true, `${path} should exist`);
   }
+});
+
+test('the production build keeps SRI for the pinned React bundles', () => {
+  const source = buildScript();
+  assert.match(source, /const REACT_PROD_SRI = "sha384-[^"]+"/);
+  assert.match(source, /const REACT_DOM_PROD_SRI = "sha384-[^"]+"/);
+  assert.doesNotMatch(source, /replace\(\/integrity=/);
 });

@@ -47,10 +47,20 @@ let html = read(`${PROJ}/Waniushka Portfolio.html`);
 // Remove the three text/babel script tags + babel.min.js, replace with one plain script.
 html = html.replace(/\s*<script[^>]*babel\.min\.js[^>]*><\/script>/g, "");
 html = html.replace(/\s*<script type="text\/babel"[^>]*><\/script>/g, "");
-// Switch React UMDs from .development.js to .production.min.js for static prod.
-html = html.replace(/react\.development\.js/, "react.production.min.js")
-           .replace(/react-dom\.development\.js/, "react-dom.production.min.js")
-           .replace(/integrity="[^"]*"\s*/g, ""); // SRI hashes no longer match prod files
+// Switch React UMDs to their pinned production bundles while preserving SRI.
+// Hashes were calculated from the exact unpkg payloads named below.
+const REACT_PROD_SRI = "sha384-DGyLxAyjq0f9SPpVevD6IgztCFlnMF6oW/XQGmfe+IsZ8TqEiDrcHkMLKI6fiB/Z";
+const REACT_DOM_PROD_SRI = "sha384-gTGxhz21lVGYNMcdJOyq01Edg0jhn/c22nsx0kyqP0TxaV5WVdsSH1fSDUf5YJj1";
+html = html.replace(
+  /react\.development\.js" integrity="[^"]+"/,
+  `react.production.min.js" integrity="${REACT_PROD_SRI}"`,
+).replace(
+  /react-dom\.development\.js" integrity="[^"]+"/,
+  `react-dom.production.min.js" integrity="${REACT_DOM_PROD_SRI}"`,
+);
+if (PROD && (!html.includes(REACT_PROD_SRI) || !html.includes(REACT_DOM_PROD_SRI))) {
+  throw new Error("Impossible d’injecter les hashes SRI des bundles React de production");
+}
 const inject = '  <script src="waniushka.bundle.js" defer></script>\n';
 html = html.replace("</body>", inject + "</body>");
 fs.writeFileSync(`${OUT}/index.html`, html, "utf8");
