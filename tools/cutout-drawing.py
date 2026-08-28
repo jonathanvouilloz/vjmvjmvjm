@@ -40,7 +40,7 @@ def load(path):
     return ImageOps.exif_transpose(Image.open(path))
 
 
-def to_alpha(img):
+def to_alpha(img, cutoff=0.18):
     """Image RVB d'un scan → image L où 255 = encre pleine, 0 = papier."""
     gray = img.convert("L")
     hist = gray.histogram()
@@ -61,7 +61,7 @@ def to_alpha(img):
     lut = []
     for v in range(256):
         a = (paper - v) / span
-        a = 0.0 if a < 0.18 else min(1.0, (a - 0.18) / 0.82)
+        a = 0.0 if a < cutoff else min(1.0, (a - cutoff) / (1.0 - cutoff))
         lut.append(int(round(a * 255)))
     return gray.point(lut)
 
@@ -170,6 +170,50 @@ def pieces(src_name, names, max_side=200, order="reading"):
             save(alpha, box, OUT / f"{name}.png", max_side=max_side)
 
 
+def selected_piece(src_name, out_name, box, max_side=240, cutoff=0.55, trim_threshold=35):
+    """Détoure puis recadre une zone choisie dans une page de carnet photographiée."""
+    print(f"{src_name} → {out_name}.png")
+    # Les photos de pages entières portent davantage de grain et d'ombres que les planches
+    # de sigles. Une coupure plus franche évite qu'un carré de papier réapparaisse après
+    # inversion sur le thème sombre. Le second recadrage supprime la marge du choix manuel.
+    crop = load(SIGLES / src_name).crop(box)
+    alpha = to_alpha(crop, cutoff=cutoff).filter(ImageFilter.MedianFilter(3))
+    ink = alpha.point(lambda v: 255 if v > trim_threshold else 0)
+    save(alpha, ink.getbbox() or (0, 0, *alpha.size), OUT / f"{out_name}.png", max_side=max_side)
+
+
+def favicons():
+    """Produit une étoile robuste aux tailles d'onglet et une icône tactile sur fond blanc."""
+    src = OUT / "nav-star.png"
+    alpha = Image.open(src).getchannel("A")
+    bbox = alpha.point(lambda v: 255 if v > 45 else 0).getbbox() or (0, 0, *alpha.size)
+    alpha = alpha.crop(bbox)
+
+    def square(size, background=(0, 0, 0, 0), inset=0.12):
+        canvas = Image.new("RGBA", (size, size), background)
+        side = max(1, round(size * (1 - inset * 2)))
+        mark = alpha.copy()
+        mark.thumbnail((side, side), Image.Resampling.LANCZOS)
+        mark = mark.point(lambda v: min(255, round(v * 1.4)))
+        ink = Image.new("RGBA", mark.size, (0, 0, 0, 0))
+        ink.putalpha(mark)
+        canvas.alpha_composite(ink, ((size - mark.width) // 2, (size - mark.height) // 2))
+        return canvas
+
+    square(16, inset=0.04).save(OUT / "favicon-16.png")
+    square(32, inset=0.08).save(OUT / "favicon-32.png")
+    square(180, background=(250, 250, 248, 255), inset=0.18).save(OUT / "apple-touch-icon.png")
+
+    # Version vectorielle volontairement simple : traits irréguliers inspirés du dessin,
+    # assez épais pour survivre à 16 px et colorés par le navigateur en clair/sombre.
+    (OUT / "favicon.svg").write_text("""<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <g fill="none" stroke="#111" stroke-width="4.6" stroke-linecap="round">
+    <path d="M32 5L31 59M5 31L59 33M13 12L51 52M52 13L12 50M21 7L40 57M7 22L57 43M43 7L22 57M8 42L56 21"/>
+  </g>
+</svg>\n""", encoding="utf-8")
+    print("  assets/brand/favicon.svg + PNG 16/32/180")
+
+
 def aleas():
     """Les 24 phrases manuscrites du dossier « Aléas quotidien ».
 
@@ -198,4 +242,15 @@ if __name__ == "__main__":
     ])
     # Les deux caméras encadrent « Biofilmographie » sur la page bio.
     pieces("sigles_caméras.jpeg", ["sigle-camera-1", "sigle-camera-2"], order="row")
+    pieces("sigles_yeux.jpeg", ["nav-eye-left", "nav-eye-right"])
+    pieces("sigles_infos.jpeg", ["info-album-1", "info-album-2", "info-album-3", None, None])
+
+    # Ces photos montrent une page de carnet entière : on sélectionne le dessin central et
+    # on ignore la reliure, le bord du cahier et les fragments des essais voisins.
+    selected_piece("Home.jpeg", "nav-home", (372, 444, 744, 954))
+    selected_piece("Lune.jpeg", "nav-moon", (288, 198, 444, 342))
+    selected_piece("Soleil.jpeg", "nav-sun", (240, 138, 516, 516), cutoff=0.70, trim_threshold=30)
+    selected_piece("Montagnes.jpeg", "nav-mountains", (474, 342, 900, 624))
+    selected_piece("Etoile.jpeg", "nav-star", (570, 270, 822, 576))
+    favicons()
     aleas()

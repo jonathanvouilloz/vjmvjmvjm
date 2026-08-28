@@ -4,7 +4,9 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "node --test tests/site.test.mjs",
+    "build": "node precompile.mjs --prod",
+    "package:netlify": "python tools/package-netlify.py"
   },
   "keywords": [],
   "author": "",

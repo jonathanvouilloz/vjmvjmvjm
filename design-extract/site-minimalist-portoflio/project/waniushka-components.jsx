@@ -199,7 +199,7 @@ const BIO = {
     ['Membre de la Commission du cinéma de la Ville de Genève, 2008-10.'],
   ],
   /* Le @ tient lieu du second « a » de Vania : vani + @ + vjmvjmvjm.com */
-  email: 'vani@vjmvjmvjm.com',
+  email: 'hello@vjmvjmvjm.com',
   iban: 'CH03 8080 8005 8046 1298 3',
   social: [
     { id: 'instagram', label: 'Instagram', url: 'https://www.instagram.com/waniushka' },
@@ -242,23 +242,12 @@ function ThemeToggle({ theme, onToggle }) {
   const [hov, setHov] = useState(false);
   return (
     <button onClick={onToggle} onMouseEnter={() => setHov(true)} onMouseLeave={() => setHov(false)}
-      aria-label="Toggle theme" style={{
+      aria-label={theme === 'light' ? 'Activer le thème sombre' : 'Activer le thème clair'} style={{
         background: 'none', border: 'none', cursor: 'pointer', padding: 8,
-        color: 'var(--fg)', opacity: hov ? 1 : 0.5, transition: 'opacity 0.3s',
+        width: 44, height: 44, display: 'flex', alignItems: 'center', justifyContent: 'center',
+        color: 'var(--fg)', opacity: hov ? 1 : 0.55, transition: 'opacity 0.3s',
       }}>
-      {theme === 'light' ? (
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-          <path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"></path>
-        </svg>
-      ) : (
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-          <circle cx="12" cy="12" r="5"></circle>
-          <line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line>
-          <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
-          <line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line>
-          <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
-        </svg>
-      )}
+      <BrandIcon src={theme === 'light' ? 'assets/brand/nav-moon.png' : 'assets/brand/nav-sun.png'} size={20} />
     </button>
   );
 }
@@ -547,6 +536,14 @@ function AudioPlayer({ tracks }) {
   );
 }
 
+function TrackPlayIcon({ active }) {
+  return (
+    <svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true" style={{ display: 'block' }}>
+      <path d="M4.2 2.5L11 7 4.2 11.5Z" fill="currentColor" opacity={active ? 1 : 0.72} />
+    </svg>
+  );
+}
+
 function TrackRow({ track, index, current, playing, onSelect }) {
   const [hov, setHov] = useState(false);
   const on = current || hov;
@@ -569,10 +566,10 @@ function TrackRow({ track, index, current, playing, onSelect }) {
       </div>
       <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
         <span style={{
-          fontFamily: 'var(--font-digital)', fontSize: 11, lineHeight: 1,
+          width: 14, height: 14, display: 'flex', alignItems: 'center', justifyContent: 'center',
           color: current && playing ? 'var(--fg)' : 'var(--fg-muted)',
           opacity: on ? 1 : 0.4, transition: 'opacity 0.25s, color 0.25s',
-        }}>▶</span>
+        }}><TrackPlayIcon active={current && playing} /></span>
         <span style={meta}>{track.duration}</span>
       </div>
     </div>
@@ -581,27 +578,20 @@ function TrackRow({ track, index, current, playing, onSelect }) {
 
 /* ═══ Itération 2 — briques partagées ═══ */
 
-/* ── Icônes SVG (placeholders manuscrits ; theme-aware via currentColor) ── */
+/* ── Dessins de Vania détourés ; l'encre suit le thème via --ink-invert ── */
+function BrandIcon({ src, size = 22, alt = '' }) {
+  return <img src={src} alt={alt} aria-hidden={alt ? undefined : 'true'} style={{
+    width: size, height: size, objectFit: 'contain', display: 'block', filter: 'var(--ink-invert)',
+  }} />;
+}
 function IconHome({ size = 22 }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M4 11.5 L12 4 L20 11.5" /><path d="M6 10.5 V20 H18 V10.5" />
-    </svg>
-  );
+  return <BrandIcon src="assets/brand/nav-home.png" size={size} />;
 }
 function IconMountain({ size = 24 }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 28 24" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M2 20 L9 8 L13 14 L17 6 L26 20 Z" />
-    </svg>
-  );
+  return <BrandIcon src="assets/brand/nav-mountains.png" size={size} />;
 }
 function IconStar({ size = 20 }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M12 2 V22 M2 12 H22 M4.9 4.9 L19.1 19.1 M19.1 4.9 L4.9 19.1" />
-    </svg>
-  );
+  return <BrandIcon src="assets/brand/nav-star.png" size={size} />;
 }
 function IconMenu({ size = 24, open = false }) {
   return (
@@ -681,6 +671,7 @@ function IconButton({ children, onClick, title, active }) {
       onMouseEnter={() => setHov(true)} onMouseLeave={() => setHov(false)}
       style={{
         background: 'none', border: 'none', cursor: 'pointer', padding: 6, lineHeight: 0,
+        minWidth: 44, minHeight: 44,
         color: 'var(--fg)', opacity: active || hov ? 1 : 0.55, transition: 'opacity 0.25s',
         display: 'flex', alignItems: 'center', justifyContent: 'center',
       }}>{children}</button>

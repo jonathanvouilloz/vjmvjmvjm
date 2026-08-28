@@ -30,13 +30,11 @@ function useGlobalTypo(theme) {
    Ce sont les dessins de Vania, détourés en PNG transparents par tools/cutout-drawing.py
    (`src`), sauf le contact où elle a demandé un avion (`glyph`), le second retourné. */
 const SIGLES = {
-  kinematik: { src: 'assets/brand/sigle-etoile-2.png' },
-  films: { src: 'assets/brand/sigle-spirale-1.png' },
-  carnets: { src: 'assets/brand/sigle-vague-1.png' },
+  kinematik: { left: 'assets/brand/nav-eye-left.png', right: 'assets/brand/nav-eye-right.png' },
+  films: { left: 'assets/brand/sigle-camera-1.png', right: 'assets/brand/sigle-camera-2.png' },
+  carnets: { left: 'assets/brand/sigle-etoile-1.png', right: 'assets/brand/sigle-etoile-2.png' },
   contact: { glyph: '✈', mirror: true },
-  /* La biofilmographie a droit à sa paire de caméras, qu'elle a dessinées l'une tournée à
-     gauche et l'autre à droite : deux fichiers distincts plutôt qu'un miroir. */
-  biofilmo: { srcLeft: 'assets/brand/sigle-camera-1.png', src: 'assets/brand/sigle-camera-2.png' },
+  biofilmo: { left: 'assets/brand/sigle-camera-1.png', right: 'assets/brand/sigle-camera-2.png' },
 };
 
 /* Un sigle : dessin scanné ou glyphe. `flip` désigne l'exemplaire de gauche — il retourne
@@ -45,7 +43,7 @@ function Sigle({ id, flip = false, size = '0.8em', opacity = 0.5 }) {
   const s = SIGLES[id];
   if (!s) return null;
   const transform = flip && s.mirror ? 'scaleX(-1)' : 'none';
-  const src = flip && s.srcLeft ? s.srcLeft : s.src;
+  const src = flip ? (s.left || s.right) : (s.right || s.left);
   if (src) {
     return (
       <img src={src} alt="" aria-hidden="true" style={{
@@ -120,16 +118,18 @@ function BackLink({ label, onClick }) {
    maison (gauche) · étoile / thème / montagne (centre) · hamburger (droite) */
 function Header({ theme, onToggleTheme, onHome, onMenuToggle, menuOpen, onStar, onMountain, onName }) {
   const [nameHov, setNameHov] = useState(false);
+  const isMobile = useMediaQuery('(max-width: 680px)');
+  const isNarrow = useMediaQuery('(max-width: 360px)');
   return (
     <header style={{
       position: 'fixed', top: 0, left: 0, right: 0, zIndex: 100,
       height: 'var(--header-h)',
       display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-      paddingLeft: 'var(--container-pad)', paddingRight: 'var(--container-pad)',
+      paddingLeft: isMobile ? 10 : 'var(--container-pad)', paddingRight: isMobile ? 10 : 'var(--container-pad)',
     }}>
       {/* Gauche : maison → menu, suivie du nom manuscrit → bio */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 4, minWidth: 40 }}>
-        <IconButton onClick={onHome} title="Menu"><IconHome /></IconButton>
+        {!isNarrow && <IconButton onClick={onHome} title="Menu"><IconHome /></IconButton>}
         <button onClick={onName} title="Bio" aria-label="Vania Jaikin Miyazaki"
           onMouseEnter={() => setNameHov(true)} onMouseLeave={() => setNameHov(false)}
           style={{
@@ -137,17 +137,17 @@ function Header({ theme, onToggleTheme, onHome, onMenuToggle, menuOpen, onStar, 
             lineHeight: 0, opacity: nameHov ? 1 : 0.8, transition: 'opacity 0.25s',
           }}>
           {/* Dessin de Vania détouré ; l'encre noire s'inverse en thème sombre.
-              46 px : en dessous, le trait de stylo (fin, et très réduit par la grande
-              hampe du V) descend sous le pixel et la signature s'efface. */}
+              La version mobile descend à 34 px pour laisser les trois commandes centrales
+              accessibles sans chevauchement, tout en gardant le geste reconnaissable. */}
           <img src="assets/brand/nom-manuscrit.png" alt="Vania Jaikin Miyazaki"
-            style={{ height: 46, width: 'auto', display: 'block', filter: 'var(--ink-invert)' }} />
+            style={{ height: isMobile ? 34 : 46, width: 'auto', display: 'block', filter: 'var(--ink-invert)' }} />
         </button>
       </div>
 
       {/* Centre : étoile (aléas) · soleil-lune (thème) · montagne (contact) */}
       <div style={{
         position: 'absolute', left: '50%', transform: 'translateX(-50%)',
-        display: 'flex', alignItems: 'center', gap: 4,
+        display: 'flex', alignItems: 'center', gap: isMobile ? 0 : 4,
       }}>
         <IconButton onClick={onStar} title="Aléas du jour"><IconStar /></IconButton>
         <ThemeToggle theme={theme} onToggle={onToggleTheme} />
@@ -235,22 +235,66 @@ function MenuDropdown({ onClose, onNavigate }) {
    La phrase est l'écriture de Vania elle-même, scannée et détourée (encre sur transparent,
    inversée en thème sombre par `--ink-invert`). On garde le fondu-flou qui accompagnait
    l'ancienne animation mot à mot, désormais sur l'image entière. */
-function AleaImage({ src }) {
+function AleaImage({ src, reducedMotion = false }) {
   const [show, setShow] = useState(false);
   useEffect(() => {
-    const t = setTimeout(() => setShow(true), 120);
+    const t = setTimeout(() => setShow(true), reducedMotion ? 0 : 80);
     return () => clearTimeout(t);
-  }, [src]);
+  }, [src, reducedMotion]);
   const ease = 'cubic-bezier(0.22, 0.61, 0.36, 1)';
   return (
     <img src={src} alt="Aléa du jour" style={{
       display: 'block', margin: '0 auto',
-      maxWidth: '100%', maxHeight: '60vh', width: 'auto', height: 'auto',
-      filter: show ? 'var(--ink-invert) blur(0px)' : 'var(--ink-invert) blur(8px)',
+      maxWidth: '88vw', maxHeight: '76vh', width: 'auto', height: 'auto',
+      filter: show || reducedMotion ? 'var(--ink-invert) blur(0px)' : 'var(--ink-invert) blur(10px)',
       opacity: show ? 1 : 0,
-      transform: show ? 'translateY(0)' : 'translateY(10px)',
-      transition: `opacity 0.9s ${ease}, filter 0.9s ${ease}, transform 0.9s ${ease}`,
+      transform: show || reducedMotion ? 'translateY(0)' : 'translateY(12px)',
+      transition: reducedMotion ? 'opacity 0.15s linear' : `opacity 0.9s ${ease}, filter 0.9s ${ease}, transform 0.9s ${ease}`,
     }} />
+  );
+}
+
+function FullscreenAleaOverlay({ src, onClose }) {
+  const [show, setShow] = useState(false);
+  const closeRef = useRef(null);
+  const reducedMotion = useMediaQuery('(prefers-reduced-motion: reduce)');
+
+  useEffect(() => {
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    const raf = requestAnimationFrame(() => setShow(true));
+    closeRef.current?.focus();
+    const onKeyDown = (event) => {
+      if (event.key === 'Escape') onClose();
+      if (event.key === 'Tab') {
+        event.preventDefault();
+        closeRef.current?.focus();
+      }
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => {
+      cancelAnimationFrame(raf);
+      document.body.style.overflow = previousOverflow;
+      window.removeEventListener('keydown', onKeyDown);
+      document.querySelector('[aria-label="Aléas du jour"]')?.focus();
+    };
+  }, [onClose]);
+
+  return (
+    <div role="dialog" aria-modal="true" aria-label="Aléa du jour" onClick={onClose} style={{
+      position: 'fixed', inset: 0, zIndex: 400, background: 'var(--bg)', color: 'var(--fg)',
+      display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 'clamp(24px, 6vw, 80px)',
+      opacity: show ? 1 : 0, transition: reducedMotion ? 'none' : 'opacity 0.35s ease',
+    }}>
+      <button ref={closeRef} onClick={onClose} aria-label="Fermer" style={{
+        position: 'absolute', top: 18, right: 20, width: 44, height: 44,
+        background: 'none', border: 'none', color: 'var(--fg)', cursor: 'pointer',
+        fontSize: 28, lineHeight: 1, opacity: 0.68,
+      }}>×</button>
+      <div onClick={(event) => event.stopPropagation()}>
+        <AleaImage src={src} reducedMotion={reducedMotion} />
+      </div>
+    </div>
   );
 }
 
@@ -400,6 +444,13 @@ function KinTile({ v, index, isMob, onClick }) {
 }
 
 /* ═══════════════════ FILMS (liste albums) ═══════════════════ */
+function AlbumInfoIcon({ albumId, size = 24 }) {
+  const index = Math.max(0, ALBUMS.findIndex((album) => album.id === albumId));
+  return <img src={`assets/brand/info-album-${Math.min(index + 1, 3)}.png`} alt="" aria-hidden="true" style={{
+    width: size, height: size, objectFit: 'contain', display: 'block', filter: 'var(--ink-invert)',
+  }} />;
+}
+
 function FilmsPage({ onOpenAlbum, onInfo, onBack }) {
   return (
     <Page>
@@ -418,15 +469,15 @@ function FilmsPage({ onOpenAlbum, onInfo, onBack }) {
               onMouseEnter={(e) => { e.currentTarget.style.opacity = 1; }}
               onMouseLeave={(e) => { e.currentTarget.style.opacity = 0.9; }}
             >{a.titre}</button>
-            <button onClick={() => onInfo(a.id)} aria-label="Infos" title="Infos" style={{
-              background: 'none', border: '1px solid var(--fg-muted)', color: 'var(--fg-muted)',
-              borderRadius: '50%', width: 30, height: 30, cursor: 'pointer', flexShrink: 0,
-              fontFamily: 'var(--font-heading)', fontStyle: 'italic', fontSize: 15,
-              transition: 'color 0.2s, border-color 0.2s',
+            <button onClick={() => onInfo(a.id)} aria-label={`Infos — ${a.titre}`} title="Infos" style={{
+              background: 'none', border: 'none', color: 'var(--fg-muted)',
+              width: 44, height: 44, cursor: 'pointer', flexShrink: 0,
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              transition: 'opacity 0.2s', opacity: 0.62,
             }}
-              onMouseEnter={(e) => { e.currentTarget.style.color = 'var(--fg)'; e.currentTarget.style.borderColor = 'var(--fg)'; }}
-              onMouseLeave={(e) => { e.currentTarget.style.color = 'var(--fg-muted)'; e.currentTarget.style.borderColor = 'var(--fg-muted)'; }}
-            >i</button>
+              onMouseEnter={(e) => { e.currentTarget.style.opacity = 1; }}
+              onMouseLeave={(e) => { e.currentTarget.style.opacity = 0.62; }}
+            ><AlbumInfoIcon albumId={a.id} size={28} /></button>
           </div>
         ))}
       </div>
@@ -441,11 +492,11 @@ function AlbumPage({ album, onBack, onInfo }) {
       <BackLink label="Films pour les oreilles" onClick={onBack} />
       <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 'var(--block-gap)' }}>
         <h1 style={{ fontFamily: 'var(--font-heading)', fontSize: 'clamp(1.25rem, 2.2vw, 1.7rem)', lineHeight: 1.2 }}>{album.titre}</h1>
-        <button onClick={() => onInfo(album.id)} aria-label="Infos" title="Infos" style={{
-          background: 'none', border: '1px solid var(--fg-muted)', color: 'var(--fg-muted)',
-          borderRadius: '50%', width: 24, height: 24, cursor: 'pointer', flexShrink: 0,
-          fontFamily: 'var(--font-heading)', fontStyle: 'italic', fontSize: 13,
-        }}>i</button>
+        <button onClick={() => onInfo(album.id)} aria-label={`Infos — ${album.titre}`} title="Infos" style={{
+          background: 'none', border: 'none', color: 'var(--fg-muted)',
+          width: 40, height: 40, cursor: 'pointer', flexShrink: 0,
+          display: 'flex', alignItems: 'center', justifyContent: 'center', opacity: 0.68,
+        }}><AlbumInfoIcon albumId={album.id} size={25} /></button>
       </div>
       {/* Les albums masterisés ont leur player maison ; « L'apparition des coquillages »
           n'existe que sur Spotify et s'y écoute directement. */}
@@ -486,7 +537,7 @@ const LINE_WIDTH = 2.5;
 
 /* Zone de dessin. Les traits sont conservés en mémoire ({color, pts}) et rejoués :
    le dessin survit au resize (sans flou) et à la bascule de thème (l'encre suit --fg). */
-function DrawCanvas({ theme }) {
+const DrawCanvas = React.forwardRef(function DrawCanvas({ theme }, apiRef) {
   const ref = useRef(null);
   const drawing = useRef(false);
   const strokes = useRef([]);
@@ -556,6 +607,39 @@ function DrawCanvas({ theme }) {
   const end = () => { drawing.current = false; };
   const clear = () => { strokes.current = []; redraw(); };
 
+  React.useImperativeHandle(apiRef, () => ({
+    toBlob: () => new Promise((resolveBlob) => {
+      if (!strokes.current.length || !ref.current) return resolveBlob(null);
+      const source = ref.current;
+      const dpr = window.devicePixelRatio || 1;
+      const rect = source.getBoundingClientRect();
+      // Netlify limite toute la requête à 8 Mo. Les écrans 4K/Retina peuvent sinon produire
+      // un PNG de plus de 15 Mo ; deux millions de pixels gardent le trait net et une marge
+      // sûre pour les champs texte du multipart.
+      const MAX_EXPORT_PIXELS = 2_000_000;
+      const exportScale = Math.min(dpr, Math.sqrt(MAX_EXPORT_PIXELS / (rect.width * rect.height)));
+      const output = document.createElement('canvas');
+      output.width = Math.max(1, Math.round(rect.width * exportScale));
+      output.height = Math.max(1, Math.round(rect.height * exportScale));
+      const ctx = output.getContext('2d');
+      ctx.fillStyle = '#FAFAF8';
+      ctx.fillRect(0, 0, output.width, output.height);
+      ctx.setTransform(exportScale, 0, 0, exportScale, 0, 0);
+      ctx.lineWidth = LINE_WIDTH; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+      strokes.current.forEach((stroke) => {
+        if (stroke.pts.length < 2) return;
+        const color = INKS.find((candidate) => candidate.id === stroke.color);
+        ctx.strokeStyle = stroke.color === 'ink' ? '#1A1A1A' : (color?.css || stroke.color);
+        ctx.beginPath();
+        ctx.moveTo(stroke.pts[0].x, stroke.pts[0].y);
+        stroke.pts.slice(1).forEach((point) => ctx.lineTo(point.x, point.y));
+        ctx.stroke();
+      });
+      output.toBlob(resolveBlob, 'image/png');
+    }),
+    clear,
+  }), []);
+
   return (
     <div style={{ position: 'relative', width: '100%', height: '100%' }}>
       <canvas ref={ref}
@@ -595,39 +679,50 @@ function DrawCanvas({ theme }) {
       </div>
     </div>
   );
-}
+});
 
 function ContactPage({ theme }) {
   const isMob = useMediaQuery('(max-width: 760px)');
+  const canvasRef = useRef(null);
+  const [status, setStatus] = useState('idle');
   const field = { width: '100%', padding: '10px 12px', background: 'transparent', border: '1px solid var(--border)', color: 'var(--fg)', fontFamily: 'var(--font-body)', fontSize: 15, marginTop: 6 };
-  const submit = (e) => {
-    e.preventDefault();
-    const f = e.target;
-    const subject = encodeURIComponent(`Message de ${f.nom.value}`);
-    const body = encodeURIComponent(`${f.message.value}\n\n— ${f.nom.value} (${f.email.value})`);
-    window.location.href = `mailto:${BIO.email}?subject=${subject}&body=${body}`;
+
+  const submit = async (event) => {
+    event.preventDefault();
+    if (status === 'sending') return;
+    setStatus('sending');
+    try {
+      const form = event.currentTarget;
+      const formData = new FormData(form);
+      const drawing = await canvasRef.current?.toBlob();
+      if (drawing) formData.append('dessin', drawing, `dessin-${Date.now()}.png`);
+      const response = await fetch('/', { method: 'POST', body: formData });
+      if (!response.ok) throw new Error(`Netlify Forms: ${response.status}`);
+      form.reset();
+      canvasRef.current?.clear();
+      setStatus('success');
+    } catch (error) {
+      console.error('Échec de l’envoi du formulaire', error);
+      setStatus('error');
+    }
   };
+
   const canvasH = isMob ? '60vh' : 'calc(100vh - var(--header-h))';
   return (
     <Page variant="bleed">
-      {/* Carte postale : l'image à gauche, le mot et l'adresse à droite.
-          Sur mobile la carte se replie et le formulaire repasse devant — un canvas de 60vh
-          en tête de page enterrerait le contact sous la ligne de flottaison. */}
       <div style={{
         display: 'grid', gridTemplateColumns: isMob ? '1fr' : '1fr 1fr',
         minHeight: isMob ? 0 : 'calc(100vh - var(--header-h))',
       }}>
-        {/* Gauche : zone de dessin, bord à bord */}
         <div style={{
           order: isMob ? 2 : 1,
           height: canvasH,
           borderRight: isMob ? 'none' : '1px solid var(--border)',
           borderTop: isMob ? '1px solid var(--border)' : 'none',
         }}>
-          <DrawCanvas theme={theme} />
+          <DrawCanvas ref={canvasRef} theme={theme} />
         </div>
 
-        {/* Droite : formulaire, adresse, réseaux, IBAN */}
         <div style={{
           order: isMob ? 1 : 2,
           display: 'flex', flexDirection: 'column', justifyContent: 'center',
@@ -637,19 +732,30 @@ function ContactPage({ theme }) {
         }}>
           <div style={{ width: '100%', maxWidth: 460, margin: '0 auto' }}>
             <PageTitle id="contact" label="Contact" align="left" />
-            <form onSubmit={submit} style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
-              <label style={{ fontSize: 14, color: 'var(--fg-muted)' }}>nom<input name="nom" required style={field} /></label>
-              <label style={{ fontSize: 14, color: 'var(--fg-muted)' }}>email<input name="email" type="email" required style={field} /></label>
+            <form name="contact" method="POST" data-netlify="true" data-netlify-honeypot="bot-field"
+              onSubmit={submit} style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
+              <input type="hidden" name="form-name" value="contact" />
+              <input type="hidden" name="subject" value="Nouveau message depuis vjmvjmvjm.com" />
+              <p hidden><label>Ne pas remplir : <input name="bot-field" /></label></p>
+              <label style={{ fontSize: 14, color: 'var(--fg-muted)' }}>nom<input name="nom" required autoComplete="name" style={field} /></label>
+              <label style={{ fontSize: 14, color: 'var(--fg-muted)' }}>email<input name="email" type="email" required autoComplete="email" style={field} /></label>
               <label style={{ fontSize: 14, color: 'var(--fg-muted)' }}>message<textarea name="message" rows="5" required style={{ ...field, resize: 'vertical' }} /></label>
-              <button type="submit" style={{
+              <button type="submit" disabled={status === 'sending'} style={{
                 alignSelf: 'flex-start', background: 'var(--fg)', color: 'var(--bg)', border: 'none',
-                padding: '10px 26px', cursor: 'pointer', fontFamily: 'var(--font-body)', fontSize: 14, letterSpacing: '0.04em',
-              }}>Envoyer</button>
+                minHeight: 44, padding: '10px 26px', cursor: status === 'sending' ? 'wait' : 'pointer',
+                fontFamily: 'var(--font-body)', fontSize: 14, letterSpacing: '0.04em',
+                opacity: status === 'sending' ? 0.6 : 1,
+              }}>{status === 'sending' ? 'Envoi…' : 'Envoyer'}</button>
+              <p aria-live="polite" style={{ minHeight: 24, fontSize: 14, color: status === 'error' ? '#b42318' : 'var(--fg-muted)' }}>
+                {status === 'success' && 'Merci, votre message et votre dessin ont bien été envoyés.'}
+                {status === 'error' && 'L’envoi a échoué. Votre dessin est conservé : vous pouvez réessayer.'}
+              </p>
             </form>
             <SocialLinks />
-            <p style={{ marginTop: 16, fontSize: 15, color: 'var(--fg-muted)', lineHeight: 1.7 }}>
-              {BIO.email}<br />IBAN {BIO.iban}
-            </p>
+            <div style={{ marginTop: 16, fontSize: 15, color: 'var(--fg-muted)', lineHeight: 1.7 }}>
+              <a href={`mailto:${BIO.email}`} style={{ textUnderlineOffset: '0.18em' }}>{BIO.email}</a>
+              <p style={{ marginTop: 8 }}>Pour faire des cadeaux, voici mon IBAN :<br /><span style={{ color: 'var(--fg)' }}>{BIO.iban}</span></p>
+            </div>
           </div>
         </div>
       </div>
@@ -802,10 +908,7 @@ function App() {
       {menuOpen && <MenuDropdown onClose={() => setMenuOpen(false)} onNavigate={go} />}
 
       {aleas && (
-        /* padding resserré : l'image porte déjà sa propre marge autour du trait */
-        <Popup onClose={() => setAleas(null)} backdrop="rgba(0,0,0,0.28)" maxWidth={680} padding="52px 32px 40px">
-          <AleaImage src={aleas} />
-        </Popup>
+        <FullscreenAleaOverlay src={aleas} onClose={() => setAleas(null)} />
       )}
 
       {infoAlbumObj && (

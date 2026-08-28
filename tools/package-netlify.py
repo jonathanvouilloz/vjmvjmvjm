@@ -1,6 +1,7 @@
-"""Empaquette `dist/` en `waniushka-netlify.zip`, prêt pour le glisser-déposer Netlify.
+"""Empaquette `dist/` en `waniushka-netlify.zip` comme livrable de transport.
 
 Le contenu de `dist/` est placé à la racine du zip (Netlify sert la racine telle quelle).
+Pour une archive dépassant environ 50 Mo, préférer Netlify CLI au glisser-déposer.
 
 Les JPEG, PNG et MP3 sont stockés sans compression : ils sont déjà compressés, les
 redéflater coûte des minutes pour quelques dixièmes de pour cent — et le site pèse
@@ -40,6 +41,9 @@ if __name__ == "__main__":
 
     print(f"{OUT.name} : {len(files)} fichiers, "
           f"{raw / 1e6:.1f} Mo bruts → {OUT.stat().st_size / 1e6:.1f} Mo")
+
+    if OUT.stat().st_size > 50e6:
+        print("  ⚠ archive > 50 Mo : préférer `npx netlify-cli deploy --prod --dir=dist`")
 
     # Netlify refuse les fichiers individuels au-delà de 100 Mo hors Large Media.
     gros = [p for p in files if p.stat().st_size > 100e6]

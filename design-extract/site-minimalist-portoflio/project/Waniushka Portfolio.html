@@ -4,6 +4,16 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Vania Jaikin Miyazaki</title>
+  <meta name="description" content="Films, créations sonores et carnets de Vania Jaikin Miyazaki.">
+  <link rel="canonical" href="https://vjmvjmvjm.com/">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Vania Jaikin Miyazaki">
+  <meta property="og:description" content="Films, créations sonores et carnets de Vania Jaikin Miyazaki.">
+  <meta property="og:url" content="https://vjmvjmvjm.com/">
+  <link rel="icon" href="assets/brand/favicon.svg" type="image/svg+xml">
+  <link rel="icon" href="assets/brand/favicon-32.png" sizes="32x32" type="image/png">
+  <link rel="icon" href="assets/brand/favicon-16.png" sizes="16x16" type="image/png">
+  <link rel="apple-touch-icon" href="assets/brand/apple-touch-icon.png">
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -98,6 +108,18 @@
   <script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
 </head>
 <body>
+  <!-- Copie statique requise pour que le post-traitement Netlify détecte le formulaire
+       rendu côté client par React. Les noms de champs doivent rester alignés avec ContactPage. -->
+  <form name="contact" method="POST" enctype="multipart/form-data" data-netlify="true"
+    data-netlify-honeypot="bot-field" hidden>
+    <input type="hidden" name="form-name" value="contact">
+    <input type="hidden" name="subject" value="Nouveau message depuis vjmvjmvjm.com">
+    <input type="text" name="bot-field">
+    <input type="text" name="nom">
+    <input type="email" name="email">
+    <textarea name="message"></textarea>
+    <input type="file" name="dessin" accept="image/png">
+  </form>
   <div id="root"></div>
   <script type="text/babel" src="tweaks-panel.jsx"></script>
   <script type="text/babel" src="waniushka-components.jsx"></script>
