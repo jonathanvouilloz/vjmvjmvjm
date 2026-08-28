@@ -1,0 +1,25 @@
+# Dependencies
+node_modules/
+
+# Generated builds and deployment archives
+/dist/
+/index.html
+/waniushka.bundle.js
+/waniushka-netlify.zip
+/design.tar.gz
+
+# Large/generated media: keep only canonical brand source + web exports in Git
+/JONATHAN/*
+!/JONATHAN/Sigles/
+!/JONATHAN/Sigles/**
+/assets/*
+!/assets/brand/
+!/assets/brand/**
+
+# Local Hermes planning state
+/.hermes/
+
+# OS/editor
+.DS_Store
+Thumbs.db
+*.swp
