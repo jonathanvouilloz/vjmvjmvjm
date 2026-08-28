@@ -754,7 +754,7 @@ function ContactPage({ theme }) {
             <SocialLinks />
             <div style={{ marginTop: 16, fontSize: 15, color: 'var(--fg-muted)', lineHeight: 1.7 }}>
               <a href={`mailto:${BIO.email}`} style={{ textUnderlineOffset: '0.18em' }}>{BIO.email}</a>
-              <p style={{ marginTop: 8 }}>Pour faire des cadeaux, voici mon IBAN :<br /><span style={{ color: 'var(--fg)' }}>{BIO.iban}</span></p>
+              <p style={{ marginTop: 8 }}>Pour faire des cadeaux, voici mon IBAN.<br /><span style={{ color: 'var(--fg)' }}>{BIO.iban}</span></p>
             </div>
           </div>
         </div>

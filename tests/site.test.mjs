@@ -10,7 +10,7 @@ const html = () => read('design-extract/site-minimalist-portoflio/project/Wanius
 
 test('the public contact data uses the confirmed address and gift wording', () => {
   assert.match(components(), /email:\s*'hello@vjmvjmvjm\.com'/);
-  assert.match(app(), /Pour faire des cadeaux, voici mon IBAN\s*:/);
+  assert.match(app(), /Pour faire des cadeaux, voici mon IBAN\.<br \/>/);
 });
 
 test('the menu maps eyes, cameras and stars to the confirmed sections', () => {
