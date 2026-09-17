@@ -4,20 +4,42 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Vania Jaikin Miyazaki</title>
-  <meta name="description" content="Films, créations sonores et carnets de Vania Jaikin Miyazaki.">
+  <meta name="description" content="Vania Jaikin Miyazaki (VJM) — réalisatrice et productrice de films et de créations sonores, artiste et curatrice à Genève.">
+  <meta name="author" content="Vania Jaikin Miyazaki">
   <link rel="canonical" href="https://vjmvjmvjm.com/">
   <meta property="og:type" content="website">
   <meta property="og:title" content="Vania Jaikin Miyazaki">
-  <meta property="og:description" content="Films, créations sonores et carnets de Vania Jaikin Miyazaki.">
+  <meta property="og:description" content="Réalisatrice et productrice de films et de créations sonores, artiste et curatrice.">
+  <meta property="og:site_name" content="Vania Jaikin Miyazaki">
+  <meta property="og:locale" content="fr_CH">
   <meta property="og:url" content="https://vjmvjmvjm.com/">
   <link rel="icon" href="assets/brand/favicon.svg" type="image/svg+xml">
   <link rel="icon" href="assets/brand/favicon-32.png" sizes="32x32" type="image/png">
   <link rel="icon" href="assets/brand/favicon-16.png" sizes="16x16" type="image/png">
   <link rel="apple-touch-icon" href="assets/brand/apple-touch-icon.png">
+  <!-- Le site est rendu en JS : ces données structurées disent à Google, sans exécuter la
+       page, que vjmvjmvjm.com est le site de Vania Jaikin Miyazaki. -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "Person",
+    "name": "Vania Jaikin Miyazaki",
+    "alternateName": ["VJM", "Waniushka"],
+    "url": "https://vjmvjmvjm.com/",
+    "jobTitle": "Réalisatrice, productrice, artiste et curatrice",
+    "homeLocation": { "@type": "Place", "name": "Genève" },
+    "sameAs": [
+      "https://www.instagram.com/waniushka",
+      "https://www.facebook.com/waniouchka",
+      "https://vimeo.com/waniouchka",
+      "https://open.spotify.com/show/4qmj0UuzPkLPpDFqxgd2MY"
+    ]
+  }
+  </script>
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@300..600&family=Newsreader:ital,opsz,wght@0,6..72,300..600;1,6..72,300..500&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@300..600&family=Manrope:wght@300..600&family=Newsreader:ital,opsz,wght@0,6..72,300..600;1,6..72,300..500&display=swap" rel="stylesheet">
 
   <style>
     *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
@@ -46,6 +68,8 @@
       --font-heading: 'Newsreader', Georgia, serif;
       --font-body: 'Newsreader', Georgia, serif;
       --font-digital: 'Manrope', sans-serif;
+      /* titres du menu — la famille vient de content/site.json (policeMenu) */
+      --font-menu: 'Open Sans', sans-serif;
       --heading-weight: 400;
       --heading-spacing: 0.02em;
       --nav-transform: none;
@@ -97,6 +121,32 @@
     button { font-family: inherit; }
     a { color: inherit; }
 
+    /* ── Contenu éditable (content/ → Markdown rendu au build) ── */
+    .vjm-prose { font-family: var(--font-body); line-height: 1.7; }
+    .vjm-prose p { margin-bottom: 1.05em; }
+    .vjm-prose > :last-child > :last-child { margin-bottom: 0; }
+    .vjm-prose a { color: inherit; text-decoration: underline; text-decoration-color: var(--fg-subtle); text-underline-offset: 0.18em; transition: text-decoration-color 0.25s; }
+    .vjm-prose a:hover { text-decoration-color: currentColor; }
+    .vjm-prose em { font-style: italic; }
+    .vjm-prose strong { font-weight: 600; }
+    .vjm-prose ul, .vjm-prose ol { margin: 0 0 1.05em 1.2em; }
+    .vjm-prose blockquote { margin: 1.4em 0; padding-left: 1.2em; border-left: 1px solid var(--fg-subtle); font-style: italic; }
+    .vjm-prose figure { margin: 2em 0; }
+    .vjm-prose figure img { display: block; max-width: 100%; height: auto; margin: 0 auto; }
+    .vjm-prose figcaption, .vjm-prose .vjm-audio-title { margin-top: 8px; font-size: 0.82em; color: var(--fg-muted); text-align: center; }
+    .vjm-prose .vjm-audio-title { margin: 0 0 8px; text-align: left; }
+    .vjm-prose .vjm-liste p { margin-bottom: 0.35em; font-size: 0.92em; }
+    .vjm-prose .vjm-liste { margin-bottom: 1.05em; }
+    .vjm-prose-small { font-size: 15px; line-height: 1.65; }
+    .fn-ref { font-size: 0.7em; line-height: 0; margin-left: 1px; font-family: var(--font-digital); }
+    .fn-ref a { text-decoration: none !important; padding: 0 2px; }
+    .vjm-notes { margin-top: 3em; padding-top: 1.4em; border-top: 1px solid var(--border); font-size: 0.86em; color: var(--fg-muted); }
+    .vjm-notes li { margin-bottom: 0.8em; list-style: none; display: flex; gap: 10px; }
+    .vjm-notes p { margin-bottom: 0.5em; }
+    [id^="note-"], [id^="ref-"] { scroll-margin-top: calc(var(--header-h) + 24px); }
+    .vjm-scroll { scrollbar-width: thin; }
+    .vjm-sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
     @keyframes pulse {
       0%, 100% { opacity: 0.4; }
       50% { opacity: 0.8; }
@@ -120,7 +170,14 @@
     <textarea name="message"></textarea>
     <input type="file" name="dessin" accept="image/png">
   </form>
-  <div id="root"></div>
+  <!-- Texte lisible sans JavaScript (moteurs de recherche, lecteurs d'écran avant montage).
+       React remplace le contenu de #root au démarrage. -->
+  <div id="root">
+    <main class="vjm-sr">
+      <h1>Vania Jaikin Miyazaki</h1>
+      <p>Vania Jaikin Miyazaki (VJM) est réalisatrice et productrice de films et de créations sonores, artiste et curatrice, à Genève. Kinematik, films pour les oreilles, carnets de voyage et coin lecture.</p>
+    </main>
+  </div>
   <script type="text/babel" src="tweaks-panel.jsx"></script>
   <script type="text/babel" src="waniushka-components.jsx"></script>
   <script type="text/babel" src="waniushka-app.jsx"></script>

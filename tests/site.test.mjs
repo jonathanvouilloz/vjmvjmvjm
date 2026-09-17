@@ -12,10 +12,14 @@ const cutoutScript = () => read('tools/cutout-drawing.py');
 const packageManifest = () => JSON.parse(read('package.json'));
 const optimizeDistScript = () => read('tools/optimize-dist.py');
 const packageNetlifyScript = () => read('tools/package-netlify.py');
+const content = (path) => JSON.parse(read(`content/${path}`));
 
-test('the public contact data uses the confirmed address and gift wording', () => {
-  assert.match(components(), /email:\s*'hello@vjmvjmvjm\.com'/);
-  assert.match(app(), /Pour faire des cadeaux, voici mon IBAN\.<br \/>/);
+test('the public contact data uses the confirmed address and a bare IBAN', () => {
+  const site = content('site.json');
+  assert.equal(site.email, 'vania@vjmvjmvjm.com');
+  assert.match(site.iban, /^CH\d{2}/);
+  assert.doesNotMatch(app(), /Pour faire des cadeaux/);
+  assert.match(app(), /\{BIO\.iban\}/);
 });
 
 test('the header visual marks scale together without crowding mobile controls', () => {
@@ -45,14 +49,16 @@ test('the menu maps cameras, ear spirals and eyes to the confirmed sections', ()
   assert.match(source, /function Sigle\(\{ id, flip = false, size = '0\.8em', opacity = 0\.75 \}\)/);
 });
 
-test('Coin lecture is a visible empty section ready for future texts', () => {
+test('Coin lecture shows a collage of texts that open full-frame', () => {
   const source = app();
   assert.match(source, /lecture:\s*\{[^}]*sigle-etoile-1\.svg[^}]*sigle-etoile-2\.svg/s);
   assert.match(source, /\{ id: 'lecture', label: 'Coin lecture' \}/);
-  assert.doesNotMatch(source, /\{ id: 'lecture', label: 'Coin lecture', hidden: true \}/);
-  assert.match(source, /function ReadingPage\(\{ onBack \}\)/);
-  assert.match(source, /<h1[^>]*>Coin lecture<\/h1>/s);
-  assert.match(source, /case 'lecture':\s+return <ReadingPage onBack=\{\(\) => go\('menu'\)\} \/>/);
+  assert.match(source, /function ReadingPage\(\{ onBack, onOpenText \}\)/);
+  // la flèche seule vers le menu, la flèche + libellé vers le coin lecture
+  assert.match(source, /function ReadingPage[\s\S]*?<BackLink onClick=\{onBack\} \/>/);
+  assert.match(source, /<BackLink label="retour au coin lecture"/);
+  assert.match(source, /case 'texte':/);
+  assert.match(source, /id=\{`note-\$\{i \+ 1\}`\}/);
 });
 
 test('the alea uses a dedicated full-screen overlay instead of Popup', () => {
@@ -172,4 +178,99 @@ test('Netlify packages are immutable numbered release candidates', () => {
   assert.match(source, /waniushka-netlify-rc\{rc\}\.zip/);
   assert.match(source, /ZipFile\(OUT,\s*"x"/);
   assert.match(source, /max\(existing,\s*default=0\)\s*\+\s*1/);
+});
+
+test('the build turns content/ into window.CONTENT with rendered Markdown and footnotes', async () => {
+  const { loadContent, renderMarkdown } = await import('../tools/build-content.mjs');
+  const data = loadContent(new URL('../content', import.meta.url).pathname.replace(/^\/(\w:)/, '$1'));
+  assert.ok(data.kinematik.length >= 12);
+  assert.ok(data.lecture.some((t) => t.id === 'ma-mere'));
+  const text = data.lecture.find((t) => t.id === 'ma-mere');
+  assert.match(text.blocks[0].html, /<p>/);
+  assert.ok(text.blocks.some((b) => b.type === 'image'));
+  assert.match(text.blocks.find((b) => b.html?.includes('fn-ref')).html, /<a href="#note-1" id="ref-1"/);
+  assert.match(text.notes[0].html, /Volodia/);
+  assert.match(renderMarkdown('[x](https://a.ch)'), /target="_blank" rel="noopener noreferrer"/);
+  assert.match(renderMarkdown('« oui » ?'), /« oui » \?/);
+  assert.match(buildScript(), /window\.CONTENT = /);
+  assert.match(buildScript(), /copyDir\("admin"/);
+});
+
+test('components read editable data and render shared content blocks', () => {
+  const shared = components();
+  assert.match(shared, /const CONTENT = window\.CONTENT;/);
+  assert.match(shared, /function Blocks\(\{ blocks/);
+  for (const type of ['text', 'image', 'video', 'audio', 'lien']) {
+    assert.match(shared, new RegExp(`case '${type}':`));
+  }
+  assert.doesNotMatch(shared, /PLACEHOLDER_IMAGES|FRAGMENTS_TEXT|function RichText/);
+  assert.match(shared, /function SketchFrame/);
+  assert.match(shared, /ReactDOM\.createPortal\(/);
+});
+
+test('the CMS schema covers every content file', () => {
+  const config = read('admin/config.yml');
+  for (const file of ['site.json', 'news.json', 'bio.json', 'kinematik.json', 'albums.json']) {
+    assert.match(config, new RegExp(`file: content/${file.replace('.', '\.')}`));
+  }
+  assert.match(config, /folder: content\/lecture/);
+  assert.match(config, /name: github/);
+  assert.match(read('admin/index.html'), /@sveltia\/cms/);
+});
+
+test('the star opens the singular Aléa du jour', () => {
+  assert.match(app(), /title="Aléa du jour"/);
+  assert.doesNotMatch(app(), /Aléas du jour/);
+});
+
+test('menu titles use the configurable Open Sans face', () => {
+  assert.match(html(), /family=Open\+Sans:/);
+  assert.match(html(), /--font-menu: 'Open Sans'/);
+  assert.match(app(), /fontFamily: 'var\(--font-menu\)'/);
+  assert.equal(content('site.json').policeMenu, 'Open Sans');
+  assert.match(buildScript(), /policeMenu/);
+});
+
+test('the menu page carries the cursor dot field, off for touch and reduced motion', () => {
+  const source = app();
+  assert.match(source, /function DotField\(\)/);
+  assert.match(source, /<DotField \/>/);
+  assert.match(source, /\(pointer: coarse\)/);
+  assert.match(source, /cancelAnimationFrame\(raf\)/);
+});
+
+test('the bio swaps texts, switches FR/EN and hides the eye on demand', () => {
+  const source = app();
+  const bio = content('bio.json');
+  assert.match(bio.fr.pro[0].md, /^Vania Jaikin Miyazaki est réalisatrice/);
+  assert.match(bio.fr.perso[0].md, /^La vérité c’est que VJM/);
+  assert.ok(bio.en.pro.length && bio.en.perso.length);
+  assert.match(source, /function LangSwitch/);
+  assert.match(source, /nav-eye-middle\.svg/);
+  assert.match(source, /BIO\.bioOeilVisible &&/);
+  assert.doesNotMatch(source, /biofilmo/);
+});
+
+test('news only shows when active and within its dates', () => {
+  const shared = components();
+  assert.match(shared, /function activeNews/);
+  assert.match(shared, /n\.actif && \(!n\.debut \|\| n\.debut <= d\) && \(!n\.fin \|\| d <= n\.fin\)/);
+  assert.match(app(), /function NewsTag/);
+  assert.equal(content('news.json').news.every((n) => typeof n.actif === 'boolean'), true);
+});
+
+test('Kinematik tiles carry an exceptional mention and the lightbox a synopsis toggle', () => {
+  assert.match(app(), /v\.mention &&/);
+  assert.match(components(), /aria-label=\{infoOpen \? 'Masquer le résumé' : 'Résumé et générique'\}/);
+  const film = content('kinematik.json').films[0];
+  assert.ok('mention' in film && 'resume' in film && 'generique' in film);
+});
+
+test('the static page is findable by name', () => {
+  const source = html();
+  assert.match(source, /"@type": "Person"/);
+  assert.match(source, /"name": "Vania Jaikin Miyazaki"/);
+  assert.match(source, /<h1>Vania Jaikin Miyazaki<\/h1>/);
+  assert.match(read('public/robots.txt'), /Sitemap: https:\/\/vjmvjmvjm\.com\/sitemap\.xml/);
+  assert.match(read('public/sitemap.xml'), /<loc>https:\/\/vjmvjmvjm\.com\/<\/loc>/);
 });

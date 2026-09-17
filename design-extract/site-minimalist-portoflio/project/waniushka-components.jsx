@@ -19,52 +19,6 @@ function useMediaQuery(query) {
   return m;
 }
 
-/* ── Data ── */
-const SECTIONS = [
-  { id: 'journaux', title: 'Journaux de bord', subtitle: 'Carnets', numeral: 'I' },
-  { id: 'kinematik', title: 'Kinematik', subtitle: 'Vidéo · Films', numeral: 'II' },
-  { id: 'instants', title: 'Instants capturés', subtitle: 'Photographie', numeral: 'III' },
-  { id: 'films-oreilles', title: 'Films pour les oreilles', subtitle: 'Documents sonores', numeral: 'IV' },
-  { id: 'fragments', title: 'Fragments de discours intérieurs', subtitle: 'Textes', numeral: 'V' },
-];
-
-const PLACEHOLDER_IMAGES = [
-  { id: 1,  bg: 'linear-gradient(180deg, #2a2a2a 0%, #555 40%, #999 65%, #ddd 100%)', height: 320, title: 'Sans titre I' },
-  { id: 2,  bg: 'radial-gradient(ellipse at 30% 35%, #aaa 0%, #333 55%, #111 100%)', height: 420, title: 'Mémoire diffuse' },
-  { id: 3,  bg: 'linear-gradient(135deg, #eee 0%, #bbb 40%, #888 100%)', height: 240, title: 'Lumière rasante' },
-  { id: 4,  bg: 'conic-gradient(from 45deg at 50% 50%, #222, #777, #222)', height: 360, title: 'Rotation' },
-  { id: 5,  bg: 'linear-gradient(to right, #111 0%, #111 45%, #888 46%, #ddd 100%)', height: 280, title: 'Dualité' },
-  { id: 6,  bg: 'radial-gradient(circle at 70% 30%, #f0f0f0 0%, #999 30%, #333 60%, #0a0a0a 100%)', height: 400, title: 'Éclipse' },
-  { id: 7,  bg: 'linear-gradient(170deg, #ccc 0%, #eee 30%, #aaa 60%, #666 100%)', height: 250, title: 'Brume' },
-  { id: 8,  bg: 'linear-gradient(to bottom, #050505 0%, #050505 55%, #333 56%, #777 80%, #bbb 100%)', height: 340, title: 'Abîme' },
-  { id: 9,  bg: 'radial-gradient(ellipse at 50% 80%, #ddd 0%, #999 40%, #444 100%)', height: 300, title: 'Réminiscence' },
-  { id: 10, bg: 'linear-gradient(225deg, #222 0%, #555 50%, #999 100%)', height: 260, title: 'Fragment VII' },
-  { id: 11, bg: 'conic-gradient(from 180deg at 30% 70%, #111, #666, #bbb, #666, #111)', height: 380, title: 'Vertige' },
-  { id: 12, bg: 'linear-gradient(90deg, #ddd 0%, #aaa 20%, #666 50%, #333 80%, #111 100%)', height: 290, title: 'Passage' },
-  { id: 13, bg: 'radial-gradient(circle at 50% 50%, #eee 0%, #bbb 25%, #777 50%, #333 100%)', height: 310, title: 'Empreinte' },
-  { id: 14, bg: 'linear-gradient(160deg, #111 0%, #333 30%, #888 70%, #ccc 100%)', height: 270, title: 'Seuil' },
-  { id: 15, bg: 'conic-gradient(from 90deg at 60% 40%, #000, #444, #999, #ddd, #999, #444, #000)', height: 350, title: 'Dispersion' },
-];
-
-const TRACKS = [
-  { id: 1, title: 'Murmures du matin', duration: '4:32', sec: 272 },
-  { id: 2, title: 'Les voix du marché', duration: '6:15', sec: 375 },
-  { id: 3, title: 'Pluie sur le toit', duration: '3:48', sec: 228 },
-  { id: 4, title: 'Conversation oubliée', duration: '5:21', sec: 321 },
-  { id: 5, title: 'Le silence entre nous', duration: '7:03', sec: 423 },
-  { id: 6, title: 'Dernier train', duration: '4:47', sec: 287 },
-];
-
-const FRAGMENTS_TEXT = [
-  { id: 1, text: 'Je marche sans direction, et c\'est peut-être la seule direction qui vaille.', date: '14 mars' },
-  { id: 2, text: 'Les murs de cette ville parlent une langue que je commence seulement à comprendre.', date: '2 avril' },
-  { id: 3, text: 'Il y a dans le silence une musique que l\'oreille distraite ne perçoit pas.', date: '18 avril' },
-  { id: 4, text: 'Chaque photographie est un mensonge magnifique — une seconde qui prétend contenir l\'éternité.', date: '7 mai' },
-  { id: 5, text: 'Nous sommes tous des étrangers pour nous-mêmes, simplement certains l\'acceptent mieux que d\'autres.', date: '23 mai' },
-  { id: 6, text: 'Le temps ne passe pas. Il s\'accumule.', date: '1 juin' },
-  { id: 7, text: 'Photographier, c\'est retenir son souffle assez longtemps pour que le monde s\'imprime.', date: '19 juin' },
-];
-
 /* ═══ Itération 2 — data maquette (contenu partiel, en dur) ═══ */
 
 /* Inventaire des images, généré par tools/import-images.py dans waniushka-assets.jsx.
@@ -78,74 +32,20 @@ const { CARNETS_SRC, HOME_SRC, PORTRAITS_SRC, ALEAS_SRC } = window;
    réelles relevées à l'import, plus sur une liste tenue à la main. */
 const HOME_PHOTOS = HOME_SRC.filter((p) => p.w / p.h > 1.15).map((p) => p.src);
 
-/* Kinematik : films (extraits du docx). vimeoId → player.vimeo.com/video/{id}
-   Les titres à rallonge sont coupés en `titre` + `sousTitre` (deux lignes) plutôt qu'assemblés
-   par un tiret : sur une vignette étroite, le tiret tombait n'importe où. Graphie fixée par
-   l'exemple de Vania : « Carte Postale de Montevidéo #1 » puis « Opération Béton ».
+/* Contenu éditable : `content/*.json`, lu au build par tools/build-content.mjs et posé sur
+   `window.CONTENT`. Toute propriété `md` y a déjà sa sœur `html`. */
+const CONTENT = window.CONTENT;
 
-   `trailer` : le docx de sélection le signale film par film. C'est affiché, parce que ça
-   explique une durée de deux minutes là où le film en fait quatre-vingt-dix.
+/* Kinematik : `titre` + `sousTitre` sur deux lignes (un tiret tombait n'importe où sur une
+   vignette étroite). `trailer` explique une durée de deux minutes pour un film de quatre-vingt-dix.
+   `mention` : information exceptionnelle affichée en permanence sur la vignette.
+   `resume` (blocs) et `generique` : derrière le « i » de la lightbox.
+   Les vignettes sont dans `assets/kinematik/{id}.jpg` (tools/fetch-thumbs.py). */
+const KINEMATIK = CONTENT.kinematik;
 
-   Les vignettes sont dans `assets/kinematik/{id}.jpg`, rapatriées de Vimeo par
-   tools/fetch-thumbs.py — la page ne dépend plus d'un service tiers pour ses images.
-   Seul `k4` a un poster réellement noir côté Vimeo, à changer là-bas. */
-const KINEMATIK = [
-  { id: 'k1',  titre: 'Charles Lloyd, Dreamer in Sound', duree: "2'11\"", annee: 2016, vimeoId: '149041859', trailer: true },
-  { id: 'k2',  titre: 'Beyond the Trees',                duree: "2'17\"", annee: 2011, vimeoId: '298725112', hash: '5a560bc308' },
-  { id: 'k3',  titre: "Chronique d'une performance",     duree: "1'21\"", annee: 2026, vimeoId: '1127787853', trailer: true },
-  { id: 'k4',  titre: 'Carte Postale de Montevidéo #1', sousTitre: 'Opération Béton',  duree: "1'54\"", annee: 2019, vimeoId: '312116169' },
-  { id: 'k5',  titre: 'Carte Postale de Montevidéo #2', sousTitre: "L'uru what",       duree: "3'59\"", annee: 2019, vimeoId: '318214050' },
-  { id: 'k6',  titre: 'Carte Postale de Montevidéo #3', sousTitre: 'R-évolution',      duree: "4'26\"", annee: 2020, vimeoId: '331419879' },
-  { id: 'k7',  titre: 'Carte Postale de Montevidéo #4', sousTitre: 'Les Audacieuses',  duree: "5'23\"", annee: 2020, vimeoId: '331226065' },
-  { id: 'k8',  titre: 'Carte Postale de Montevidéo #5', sousTitre: 'Le Cube',          duree: "5'33\"", annee: 2020, vimeoId: '336954564' },
-  { id: 'k9',  titre: 'Ciné-poème',                      duree: "6'46\"", annee: 2000, vimeoId: '312855726' },
-  { id: 'k10', titre: 'Haïku #1',                        duree: "1'00\"", annee: 2017, vimeoId: '243475972' },
-  { id: 'k11', titre: 'Haïku #2',                        duree: "1'00\"", annee: 2017, vimeoId: '243478147' },
-  { id: 'k12', titre: 'Rhomba',                          duree: "3'12\"", annee: 2021, vimeoId: '606812272' },
-];
-
-/* Films pour les oreilles : 3 albums.
-   `infos` est un tableau de segments rendu par `RichText` (comme la bio) : la pop-up du « i »
-   peut donc porter des liens. `episodes[].src` pointe le MP3 déposé par tools/fetch-audio.py ;
-   `sec` et `duration` viennent de ffprobe, plus d'une estimation.
-   Un album sans `episodes` mais avec un `spotify` s'affiche en lecteur Spotify intégré. */
-const ALBUMS = [
-  {
-    id: 'coquillages',
-    titre: "L'apparition des coquillages",
-    infos: [
-      "J'ai décidé de partir sur le chemin de Saint-Jacques de Compostelle, seule, à pied, sans argent (du tout), d'octobre 2021 à janvier 2022, et je vous raconte ici, où en est l'humanité. Les 100 épisodes sont aussi disponibles sur ",
-      { t: 'Spotify', href: 'https://open.spotify.com/show/4qmj0UuzPkLPpDFqxgd2MY' },
-      '.',
-    ],
-    /* Aucun fichier n'existe hors de Spotify : le journal n'a jamais été masterisé
-       épisode par épisode. On intègre donc le lecteur du podcast plutôt que de simuler
-       une écoute qui n'aurait rien à jouer. */
-    spotify: 'https://open.spotify.com/embed/show/4qmj0UuzPkLPpDFqxgd2MY',
-  },
-  {
-    id: 'mourir',
-    titre: "Mourir c'est pas si grave",
-    infos: ["Est-ce que la vie s'arrête un jour ? Je suis allée en discuter avec quelques chercheurs, un moine bouddhiste, une directrice de pompes funèbres, deux médiums, un médecin en soins palliatifs… Et je raconte quelques petites histoires personnelles qui m'ont fait douter de la mort."],
-    /* Deux épisodes, pas six : le montage final réunit la matière en deux volets de 55 min
-       (« Version 2 épisodes de 54' » dans le document de Vania). Les masters ne portent que
-       « Episode #1 / #2 » — les vrais titres sont à lui demander. */
-    episodes: [
-      { id: 1, title: 'Épisode 1', duration: '55:21', sec: 3321, src: 'assets/audio/mourir/1.mp3' },
-      { id: 2, title: 'Épisode 2', duration: '56:07', sec: 3367, src: 'assets/audio/mourir/2.mp3' },
-    ],
-  },
-  {
-    id: 'chronique',
-    titre: 'Chroniques du dernier souffle',
-    infos: ["En me baladant dans les méandres du festival Archipel, à Genève, je récolte de belles histoires vécues ou entendues, qui ont à voir avec notre finitude, avec le passage de cet état animé à cet autre état, dont on ne sait pas grand-chose. L'âme, qui s'apparenterait au souffle selon son étymologie, abandonnerait notre corps, en s'élançant du bord de nos lèvres lors de notre dernier souffle."],
-    episodes: [
-      { id: 1, title: 'Fumée et Pardon',      duration: '9:50',  sec: 590, src: 'assets/audio/chronique/1.mp3' },
-      { id: 2, title: 'Lise Barkas',          duration: '9:27',  sec: 567, src: 'assets/audio/chronique/2.mp3' },
-      { id: 3, title: 'Le Souffle des Morts', duration: '10:31', sec: 631, src: 'assets/audio/chronique/3.mp3' },
-    ],
-  },
-];
+/* Films pour les oreilles. `infos` = blocs (texte, images, vidéos) de la pop-up du « i ».
+   Un album sans épisodes mais avec un `spotify` s'affiche en lecteur Spotify intégré. */
+const ALBUMS = CONTENT.albums.map((a) => ({ ...a, episodes: a.episodes?.length ? a.episodes : null }));
 
 /* Carnets de voyage : les 53 pages scannées, titrées par leur nom de fichier. */
 const CARNETS = CARNETS_SRC;
@@ -167,50 +67,24 @@ const CARNETS_ALL = [...CARNETS, ...PHOTOS]
    police qui l'imite (les deux manuscrites du site étaient sous licence non commerciale). */
 const ALEAS = ALEAS_SRC;
 
-/* Bio — texte intégral repris de JONATHAN/Bio VJM.odt.
-   Les paragraphes de `filmo` et `art` sont des tableaux de segments : une chaîne = du texte,
-   un objet `{t, href}` = un lien. Vania veut pouvoir pointer les collaboratrices et
-   collaborateurs qu'elle cite ; c'est extensible sans toucher au rendu. */
+/* Bio : `pro` sur la page (FR/EN), `perso` derrière l'œil. Réglages de contact dans site.json. */
 const BIO = {
-  intro: [
-    'VJM est une citoyenne cosmopolite qui chante « no soy ni de aquí ni de allá ».',
-    'Elle est en quête d\'une façon d\'habiter ce monde, en quête de sens, et parfois même en quête d\'absolu.',
-    'Comme tout le monde elle a appris des trucs à l\'école mais surtout en-dehors. Puis, elle a fait quelques rencontres qui l\'ont éclairée, un peu ou beaucoup.',
-    'Et comme tout le monde elle fait plusieurs trucs dans la vie. Sa spécialité ? Les réponses cosmiques et artisanales aux questions existentielles, fréquentielles et pragmatiques.',
-    'Et enfin, comme presque tout le monde, elle pense qu\'elle va devoir mourir un jour, mais elle sait pas encore la date. D\'ici là, elle milite pour le droit à la tendresse.',
-  ],
-  filmo: [
-    ['Réalisatrice et productrice suisse d\'origine chilienne, russe et japonaise, elle cofonde HandMade Films en 2007, au sein de laquelle elle commence à produire des courts-métrages documentaires et de fiction, ainsi que des clips musicaux.'],
-    ['Elle réalise plusieurs portraits d\'artistes, sensible à leur rapport au monde, à travers la technologie (« Nourathar », 2014, Visions du Réel), le cinéma (« Nice Time(s) », 2015), la méditation (« Charles Lloyd, Dreamer in Sound », 2016) ou encore la provocation (« Chronique d\'une performance », 2025), interrogeant sans cesse notre condition humaine.'],
-    ['Parallèlement, dans ses courts-métrages de fiction, elle développe un univers personnel, obsessionnellement centré sur des figures féminines inaptes à communiquer et en quête de liberté.'],
-    ['Dès 2019, elle travaille avec Mnemosyn Films, pour qui elle produit deux films de Charlie Petersmann : « Rois Mages » (Soleure, Winterthur) et « À Ciel Ouvert » (Soleure), tous deux consacrés à des questions d\'exclusion et de marges sociales.'],
-    [
-      'Depuis 2022, elle collabore avec le collectif ',
-      { t: 'Écran Mobile', href: 'https://ecran-mobile.ch/' },
-      ', au sein duquel elle produit « Habiter le monde » de Laura Gabay, tout en poursuivant un travail personnel désormais centré sur la liberté avec le journal sonore « L\'Apparition des coquillages » (2022) et la recherche sur la conscience et la mort avec le documentaire sonore « Mourir c\'est pas si grave » (2026).',
-    ],
-  ],
-  art: [
-    ['Curatrice de l\'exposition Mondes Parallèles, Mapping Festival, Commun, Genève, 2022.'],
-    ['Curatrice de Whall, fresque murale, d\'Abigail Janjic, Picto, 2018.'],
-    ['DA du nouveau site web de l\'association Picto, 2017.'],
-    ['Curatrice d\'une série d\'interventions architecturales, Picto, Genève, 2015.'],
-    ['Création et co-gestion de TOPIC, résidence curatoriale et espace d\'art indépendant, Genève, 2014-21.'],
-    ['Membre de la Commission du cinéma de la Ville de Genève, 2008-10.'],
-  ],
-  /* Le @ tient lieu du second « a » de Vania : vani + @ + vjmvjmvjm.com */
-  email: 'hello@vjmvjmvjm.com',
-  iban: 'CH03 8080 8005 8046 1298 3',
-  social: [
-    { id: 'instagram', label: 'Instagram', url: 'https://www.instagram.com/waniushka' },
-    { id: 'facebook',  label: 'Facebook',  url: 'https://www.facebook.com/waniouchka' },
-    { id: 'vimeo',     label: 'Vimeo',     url: 'https://vimeo.com/waniouchka' },
-    { id: 'spotify',   label: 'Spotify',   url: 'https://open.spotify.com/show/4qmj0UuzPkLPpDFqxgd2MY' },
-  ],
+  ...CONTENT.site,
+  textes: CONTENT.bio,
   /* Série d'autoportraits fournie par Vania : la page bio en tire un au hasard à chaque
      visite, comme l'accueil tire sa photo. */
   portraits: PORTRAITS_SRC.map((p) => p.src),
 };
+
+/* Coin lecture : un fichier par texte dans content/lecture/, déjà triés. */
+const LECTURE = CONTENT.lecture;
+
+/* News : une annonce n'apparaît que si elle est active ET dans sa fenêtre de dates —
+   l'encart disparaît tout seul le lendemain de `fin`. */
+function activeNews(today = new Date()) {
+  const d = today.toISOString().slice(0, 10);
+  return CONTENT.news.find((n) => n.actif && (!n.debut || n.debut <= d) && (!n.fin || d <= n.fin)) || null;
+}
 
 /* ── ScrollReveal ── */
 function ScrollReveal({ children, delay = 0, style = {} }) {
@@ -295,36 +169,6 @@ function Page({ children, variant = 'default', style = {} }) {
     );
   }
   return <div style={outer}>{children}</div>;
-}
-
-/* ── ImageOverlay (lightbox) ── */
-function ImageOverlay({ item, onClose }) {
-  const [show, setShow] = useState(false);
-  useEffect(() => {
-    requestAnimationFrame(() => requestAnimationFrame(() => setShow(true)));
-    const h = (e) => { if (e.key === 'Escape') onClose(); };
-    window.addEventListener('keydown', h);
-    return () => window.removeEventListener('keydown', h);
-  }, [onClose]);
-  return (
-    <div onClick={onClose} style={{
-      position: 'fixed', inset: 0, zIndex: 300,
-      background: show ? 'rgba(0,0,0,0.92)' : 'rgba(0,0,0,0)',
-      display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-      transition: 'background 0.4s ease', cursor: 'pointer',
-    }}>
-      <div style={{
-        width: '70vmin', maxWidth: 620, height: item.height * 1.3,
-        maxHeight: '70vh', background: item.bg,
-        opacity: show ? 1 : 0, transform: show ? 'scale(1)' : 'scale(0.92)',
-        transition: 'opacity 0.4s ease, transform 0.4s ease',
-      }}></div>
-      <p style={{
-        color: '#999', fontSize: 13, marginTop: 20, fontFamily: 'var(--font-body)',
-        opacity: show ? 1 : 0, transition: 'opacity 0.4s ease 0.15s',
-      }}>{item.title}</p>
-    </div>
-  );
 }
 
 /* ── MasonryGrid ── */
@@ -643,23 +487,109 @@ const SOCIAL_ICONS = {
   instagram: IconInstagram, facebook: IconFacebook, vimeo: IconVimeo, spotify: IconSpotify,
 };
 
-/* ── RichText : rend un paragraphe composé de chaînes et de segments { t, href } ── */
-function RichText({ parts }) {
+/* ── Html : HTML rendu au build depuis le Markdown de `content/` (contenu de l'autrice) ── */
+function Html({ html, as: Tag = 'div', className, style }) {
+  return <Tag className={className} style={style} dangerouslySetInnerHTML={{ __html: html || '' }} />;
+}
+
+/* ── Blocs de contenu ──
+   Même modèle partout (Coin lecture, infos d'album, news, résumé Kinematik, bio) :
+   texte · image · vidéo · audio · lien. Le style typographique vient de `.vjm-prose`
+   dans le gabarit HTML, pour que les balises produites par le Markdown en héritent. */
+function VideoBlock({ b }) {
+  const title = b.legende || 'Vidéo';
   return (
-    <React.Fragment>
-      {parts.map((p, i) => (typeof p === 'string' ? (
-        <React.Fragment key={i}>{p}</React.Fragment>
+    <div style={{ width: '100%', aspectRatio: '16 / 9', background: '#000' }}>
+      {b.vimeoId ? (
+        <iframe src={`https://player.vimeo.com/video/${b.vimeoId}`} title={title} loading="lazy"
+          style={{ width: '100%', height: '100%', border: 0, display: 'block' }}
+          allow="autoplay; fullscreen; picture-in-picture" allowFullScreen />
       ) : (
-        <a key={i} href={p.href} target="_blank" rel="noopener noreferrer" style={{
-          color: 'inherit', textDecoration: 'underline',
-          textDecorationColor: 'var(--fg-subtle)', textUnderlineOffset: '0.18em',
-          transition: 'text-decoration-color 0.25s',
-        }}
-          onMouseEnter={(e) => { e.currentTarget.style.textDecorationColor = 'var(--fg)'; }}
-          onMouseLeave={(e) => { e.currentTarget.style.textDecorationColor = 'var(--fg-subtle)'; }}
-        >{p.t}</a>
-      )))}
-    </React.Fragment>
+        <video src={b.url} controls preload="metadata" style={{ width: '100%', height: '100%', display: 'block' }} />
+      )}
+    </div>
+  );
+}
+
+function Blocks({ blocks, className = '' }) {
+  if (!blocks || !blocks.length) return null;
+  return (
+    <div className={`vjm-prose ${className}`}>
+      {blocks.map((b, i) => {
+        switch (b.type) {
+          case 'text':
+            return <Html key={i} html={b.html} className={b.variante === 'liste' ? 'vjm-liste' : undefined} />;
+          case 'image':
+            return (
+              <figure key={i}>
+                <img src={b.src} alt={b.alt || ''} loading="lazy" />
+                {b.legende && <figcaption>{b.legende}</figcaption>}
+              </figure>
+            );
+          case 'video':
+            return (
+              <figure key={i}>
+                <VideoBlock b={b} />
+                {b.legende && <figcaption>{b.legende}</figcaption>}
+              </figure>
+            );
+          case 'audio':
+            return (
+              <figure key={i}>
+                {b.titre && <figcaption className="vjm-audio-title">{b.titre}</figcaption>}
+                <audio src={b.src} controls preload="none" style={{ width: '100%' }} />
+              </figure>
+            );
+          case 'lien':
+            return (
+              <p key={i}>
+                <a href={b.url} target="_blank" rel="noopener noreferrer">{b.label} ↗</a>
+              </p>
+            );
+          default:
+            return null;
+        }
+      })}
+    </div>
+  );
+}
+
+/* ── SketchFrame : contour « fait à la main » ──
+   Quatre traits indépendants qui débordent aux coins et fléchissent au milieu, comme un
+   rectangle tracé au feutre. Le viewBox 0–100 est étiré sur la carte ; `non-scaling-stroke`
+   garde un trait fin quelle que soit la taille. Le tracé dépend de `seed` : une même
+   pop-up garde toujours le même dessin. */
+function sketchPath(seed) {
+  const r = (k, amp) => (seededRandom(seed * 13 + k) - 0.5) * 2 * amp;
+  const f = (n) => n.toFixed(2);
+  const side = (k, x1, y1, x2, y2) => {
+    const mx = (x1 + x2) / 2, my = (y1 + y2) / 2;
+    return `M${f(x1 + r(k, 0.8))} ${f(y1 + r(k + 1, 0.8))} `
+      + `Q${f(mx + r(k + 2, 1.2))} ${f(my + r(k + 3, 1.2))} `
+      + `${f(x2 + r(k + 4, 0.8))} ${f(y2 + r(k + 5, 0.8))}`;
+  };
+  return [
+    side(1, -1.2, 0.6, 101, 0),          // haut
+    side(11, 99.6, -1.5, 100.3, 101.5),  // droite
+    side(21, 101.2, 99.4, -0.8, 100.2),  // bas
+    side(31, 0.2, 101.6, -0.3, -1.4),    // gauche
+  ].join(' ');
+}
+
+function SketchFrame({ seed = 1, strokeWidth = 1.3 }) {
+  const d = useMemo(() => sketchPath(seed), [seed]);
+  const d2 = useMemo(() => sketchPath(seed + 7), [seed]);
+  return (
+    <svg viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true" style={{
+      position: 'absolute', inset: 0, width: '100%', height: '100%', overflow: 'visible',
+      pointerEvents: 'none',
+    }}>
+      <path d={d} fill="none" stroke="var(--fg)" strokeWidth={strokeWidth} strokeLinecap="round"
+        vectorEffect="non-scaling-stroke" />
+      {/* second passage plus léger : la main repasse rarement exactement sur son trait */}
+      <path d={d2} fill="none" stroke="var(--fg)" strokeWidth={strokeWidth * 0.5} strokeLinecap="round"
+        vectorEffect="non-scaling-stroke" opacity="0.45" />
+    </svg>
   );
 }
 
@@ -679,8 +609,10 @@ function IconButton({ children, onClick, title, active }) {
 }
 
 /* ── Popup générique (overlay centré + ×) ──
-   `backdrop` s'allège pour les aléas du jour : Vania veut continuer à voir la page derrière. */
-function Popup({ children, onClose, backdrop = 'rgba(0,0,0,0.55)', maxWidth = 560, padding = '48px 40px' }) {
+   `sketch` : la carte perd sa bordure droite pour un contour dessiné, grandit, s'incline à
+   peine et fait défiler son contenu — pour les textes longs, les images et les vidéos
+   (infos d'album, texte de l'œil, news). */
+function Popup({ children, onClose, backdrop = 'rgba(0,0,0,0.55)', maxWidth, padding, sketch = false, seed = 1, label }) {
   const [show, setShow] = useState(false);
   useEffect(() => {
     requestAnimationFrame(() => requestAnimationFrame(() => setShow(true)));
@@ -688,28 +620,42 @@ function Popup({ children, onClose, backdrop = 'rgba(0,0,0,0.55)', maxWidth = 56
     window.addEventListener('keydown', h);
     return () => window.removeEventListener('keydown', h);
   }, [onClose]);
-  return (
-    <div onClick={onClose} style={{
-      position: 'fixed', inset: 0, zIndex: 300, padding: 24,
+  const tilt = sketch ? `rotate(${((seededRandom(seed * 3) - 0.5) * 1.2).toFixed(2)}deg)` : '';
+  const pad = padding || (sketch ? 'clamp(40px, 5vw, 60px) clamp(24px, 5vw, 64px)' : '48px 40px');
+  /* Portail vers <body> : ouverte depuis une page, la pop-up hériterait sinon du `transform`
+     de PageTransition — repère décalé par le défilement, et coincée sous l'en-tête. */
+  return ReactDOM.createPortal(
+    <div onClick={onClose} role="dialog" aria-modal="true" aria-label={label} style={{
+      position: 'fixed', inset: 0, zIndex: 300, padding: sketch ? 'clamp(16px, 4vw, 40px)' : 24,
       background: show ? backdrop : 'rgba(0,0,0,0)',
       display: 'flex', alignItems: 'center', justifyContent: 'center',
       transition: 'background 0.35s ease', backdropFilter: 'blur(2px)',
     }}>
       <div onClick={(e) => e.stopPropagation()} style={{
         position: 'relative', background: 'var(--bg)', color: 'var(--fg)',
-        maxWidth, width: '100%', padding,
-        border: '1px solid var(--border)',
-        opacity: show ? 1 : 0, transform: show ? 'translateY(0)' : 'translateY(12px)',
+        maxWidth: maxWidth || (sketch ? 880 : 560), width: '100%',
+        border: sketch ? 'none' : '1px solid var(--border)',
+        opacity: show ? 1 : 0,
+        transform: `${show ? 'translateY(0)' : 'translateY(12px)'} ${tilt}`,
         transition: 'opacity 0.35s ease, transform 0.35s ease',
       }}>
+        {sketch && <SketchFrame seed={seed} />}
         <button onClick={onClose} aria-label="Fermer" style={{
-          position: 'absolute', top: 14, right: 16, background: 'none', border: 'none',
-          cursor: 'pointer', color: 'var(--fg)', fontSize: 22, lineHeight: 1, opacity: 0.6,
-          zIndex: 1,
+          position: 'absolute', top: 10, right: 12, background: 'none', border: 'none',
+          cursor: 'pointer', color: 'var(--fg)', fontSize: 24, lineHeight: 1, opacity: 0.6,
+          zIndex: 1, width: 40, height: 40,
         }}>×</button>
-        {children}
+        <div className={sketch ? 'vjm-scroll' : undefined} style={{
+          padding: pad,
+          maxHeight: sketch ? 'min(82vh, 900px)' : undefined,
+          overflowY: sketch ? 'auto' : undefined,
+          overscrollBehavior: 'contain',
+        }}>
+          {children}
+        </div>
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }
 
@@ -744,6 +690,13 @@ function MediaOverlay({ items, index, onClose, onPrev, onNext }) {
 
   const item = items[index];
   const isVideo = !!item.vimeoId;
+  /* Résumé + générique d'un film : derrière un « i » manuscrit posé sous la vidéo. Le
+     panneau se déplie SOUS le lecteur (qui rétrécit pour lui laisser la place) et défile
+     seul : on lit le générique sans perdre l'image. */
+  const hasInfo = isVideo && ((item.resume && item.resume.length) || (item.generique && item.generique.length));
+  const [infoOpen, setInfoOpen] = useState(false);
+  useEffect(() => { setInfoOpen(false); }, [index]);
+  const videoWidth = infoOpen ? 'min(84vw, 1100px, calc((100vh - 380px) * 16 / 9))' : 'min(84vw, 1100px, calc((100vh - 170px) * 16 / 9))';
   const arrow = (dir, onClick) => (
     <button onClick={(e) => { e.stopPropagation(); onClick(); }} aria-label={dir < 0 ? 'Précédent' : 'Suivant'}
       style={{
@@ -776,7 +729,7 @@ function MediaOverlay({ items, index, onClose, onPrev, onNext }) {
         display: 'flex', flexDirection: 'column', alignItems: 'center',
       }}>
         {isVideo ? (
-          <div style={{ width: '84vw', maxWidth: 1100, aspectRatio: '16 / 9', background: '#000' }}>
+          <div style={{ width: videoWidth, aspectRatio: '16 / 9', background: '#000', transition: 'width 0.35s ease' }}>
             <iframe
               src={`https://player.vimeo.com/video/${item.vimeoId}${item.hash ? '?h=' + item.hash : ''}`}
               style={{ width: '100%', height: '100%', border: 0 }}
@@ -786,18 +739,51 @@ function MediaOverlay({ items, index, onClose, onPrev, onNext }) {
           <img src={item.src} alt={item.title} style={{ maxWidth: '86vw', maxHeight: '80vh', display: 'block' }} />
         )}
         {(isVideo || item.title) && (
-          <p style={{ color: '#bbb', fontSize: 15, marginTop: 16, fontFamily: 'var(--font-body)', textAlign: 'center', lineHeight: 1.5 }}>
-            {isVideo ? (
-              <React.Fragment>
-                {item.titre}
-                {item.sousTitre && <React.Fragment><br />{item.sousTitre}</React.Fragment>}
-                <br />
-                <span style={{ fontFamily: 'var(--font-digital)', fontSize: 13 }}>
-                  {item.trailer && 'Trailer · '}{item.duree} · {item.annee}
-                </span>
-              </React.Fragment>
-            ) : item.title}
-          </p>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginTop: 16 }}>
+            <p style={{ color: '#bbb', fontSize: 15, fontFamily: 'var(--font-body)', textAlign: 'center', lineHeight: 1.5 }}>
+              {isVideo ? (
+                <React.Fragment>
+                  {item.titre}
+                  {item.sousTitre && <React.Fragment><br />{item.sousTitre}</React.Fragment>}
+                  <br />
+                  <span style={{ fontFamily: 'var(--font-digital)', fontSize: 13 }}>
+                    {item.trailer && 'Trailer · '}{item.duree} · {item.annee}
+                  </span>
+                </React.Fragment>
+              ) : item.title}
+            </p>
+            {hasInfo && (
+              <button onClick={() => setInfoOpen((v) => !v)} aria-expanded={infoOpen}
+                aria-label={infoOpen ? 'Masquer le résumé' : 'Résumé et générique'} title="Résumé et générique"
+                style={{
+                  background: 'none', border: 'none', cursor: 'pointer', width: 44, height: 44,
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  opacity: infoOpen ? 1 : 0.7, transition: 'opacity 0.2s',
+                }}>
+                {/* l'encre du « i » est noire : on l'inverse sur le fond sombre de la lightbox */}
+                <img src="assets/brand/info-album-4.svg" alt="" aria-hidden="true"
+                  style={{ width: 26, height: 26, objectFit: 'contain', filter: 'invert(1)' }} />
+              </button>
+            )}
+          </div>
+        )}
+        {hasInfo && infoOpen && (
+          <div className="vjm-scroll" style={{
+            width: 'min(84vw, 760px)', maxHeight: 'max(140px, 30vh)',overflowY: 'auto', overscrollBehavior: 'contain',
+            marginTop: 10, color: '#ddd', textAlign: 'left',
+          }}>
+            <Blocks blocks={item.resume} className="vjm-prose-small" />
+            {item.generique && item.generique.length > 0 && (
+              <dl style={{ marginTop: 18, fontFamily: 'var(--font-body)', fontSize: 14, lineHeight: 1.6 }}>
+                {item.generique.map((g, i) => (
+                  <div key={i} style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+                    <dt style={{ fontFamily: 'var(--font-digital)', fontSize: 12, color: '#999', minWidth: 120, paddingTop: 2 }}>{g.role}</dt>
+                    <dd>{g.noms}</dd>
+                  </div>
+                ))}
+              </dl>
+            )}
+          </div>
         )}
       </div>
     </div>
@@ -807,9 +793,8 @@ function MediaOverlay({ items, index, onClose, onPrev, onNext }) {
 /* ── Export ── */
 Object.assign(window, {
   seededRandom, useMediaQuery,
-  SECTIONS, PLACEHOLDER_IMAGES, TRACKS, FRAGMENTS_TEXT,
-  HOME_PHOTOS, KINEMATIK, ALBUMS, CARNETS, PHOTOS, CARNETS_ALL, ALEAS, BIO, SpotifyEmbed,
-  ScrollReveal, ThemeToggle, PageTransition, Page, ImageOverlay, MasonryGrid, AudioPlayer,
-  IconHome, IconMountain, IconStar, IconMenu, IconButton, Popup, MediaOverlay,
-  SOCIAL_ICONS, RichText,
+  HOME_PHOTOS, KINEMATIK, ALBUMS, CARNETS, PHOTOS, CARNETS_ALL, ALEAS, BIO, LECTURE, activeNews,
+  SpotifyEmbed, ScrollReveal, ThemeToggle, PageTransition, Page, MasonryGrid, AudioPlayer,
+  IconHome, IconMountain, IconStar, IconMenu, IconButton, BrandIcon, Popup, MediaOverlay,
+  SOCIAL_ICONS, Blocks, Html, SketchFrame,
 });

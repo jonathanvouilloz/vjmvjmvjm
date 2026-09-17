@@ -15,5 +15,8 @@
   "dependencies": {
     "@babel/core": "^7.29.7",
     "@babel/preset-react": "^7.29.7"
+  },
+  "devDependencies": {
+    "marked": "^15.0.12"
   }
 }

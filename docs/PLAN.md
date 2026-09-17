@@ -5,7 +5,8 @@
 | Epic | Statut | Fichier |
 |------|--------|---------|
 | Itération 1 — prototype d'exploration (variantes/tweaks) | DONE (archivé) | — |
-| Itération 2 — maquette MVP fidèle aux wireframes | **EN COURS** | docs/features/maquette-iteration-2.md |
+| Itération 2 → 4 — maquette MVP fidèle aux wireframes | DONE | docs/features/maquette-iteration-2.md |
+| Itération 5 — contenu éditable + Coin lecture + news + bio FR/EN | DONE (CMS à activer) | docs/features/iteration-5-contenu-editable.md |
 | Site propre v1 (reconstruction depuis zéro après validation maquette) | TODO | — |
 
 ## Cadre itération 2

@@ -27,7 +27,7 @@ npx netlify-cli deploy --prod --dir=dist
 Après le déploiement :
 
 1. vérifier dans **Forms** que le formulaire `contact` est détecté ;
-2. dans **Forms → Form notifications**, ajouter une notification vers `hello@vjmvjmvjm.com` ;
+2. dans **Forms → Form notifications**, ajouter une notification vers `vania@vjmvjmvjm.com` ;
 3. dans **Domain management**, rattacher `vjmvjmvjm.com` puis appliquer chez le registrar les enregistrements DNS indiqués par Netlify ;
 4. attendre l’émission du certificat HTTPS.
 
@@ -41,6 +41,6 @@ Depuis `https://vjmvjmvjm.com/` :
 4. envoyer ;
 5. vérifier le message de succès ;
 6. vérifier la soumission dans **Netlify → Forms → contact** ;
-7. vérifier que le champ `dessin` contient un PNG et que la notification arrive à `hello@vjmvjmvjm.com`.
+7. vérifier que le champ `dessin` contient un PNG et que la notification arrive à `vania@vjmvjmvjm.com`.
 
 Le formulaire est envoyé en `multipart/form-data`. Le PNG n’est ajouté que si un dessin a réellement été tracé. En cas d’échec, les champs et le dessin restent présents pour permettre une nouvelle tentative.

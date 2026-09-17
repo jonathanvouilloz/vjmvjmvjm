@@ -1,0 +1,77 @@
+{
+  "albums": [
+    {
+      "id": "coquillages",
+      "titre": "L'apparition des coquillages",
+      "infos": [
+        {
+          "type": "text",
+          "md": "J'ai décidé de partir sur le chemin de Saint-Jacques de Compostelle, seule, à pied, sans argent (du tout), d'octobre 2021 à janvier 2022, et je vous raconte ici, où en est l'humanité. Les 100 épisodes sont aussi disponibles sur [Spotify](https://open.spotify.com/show/4qmj0UuzPkLPpDFqxgd2MY)."
+        }
+      ],
+      "spotify": "https://open.spotify.com/embed/show/4qmj0UuzPkLPpDFqxgd2MY",
+      "episodes": []
+    },
+    {
+      "id": "mourir",
+      "titre": "Mourir c'est pas si grave",
+      "infos": [
+        {
+          "type": "text",
+          "md": "Est-ce que la vie s'arrête un jour ? Je suis allée en discuter avec quelques chercheurs, un moine bouddhiste, une directrice de pompes funèbres, deux médiums, un médecin en soins palliatifs… Et je raconte quelques petites histoires personnelles qui m'ont fait douter de la mort."
+        }
+      ],
+      "spotify": "",
+      "episodes": [
+        {
+          "id": 1,
+          "title": "Épisode 1",
+          "duration": "55:21",
+          "sec": 3321,
+          "src": "assets/audio/mourir/1.mp3"
+        },
+        {
+          "id": 2,
+          "title": "Épisode 2",
+          "duration": "56:07",
+          "sec": 3367,
+          "src": "assets/audio/mourir/2.mp3"
+        }
+      ]
+    },
+    {
+      "id": "chronique",
+      "titre": "Chroniques du dernier souffle",
+      "infos": [
+        {
+          "type": "text",
+          "md": "En me baladant dans les méandres du festival Archipel, à Genève, je récolte de belles histoires vécues ou entendues, qui ont à voir avec notre finitude, avec le passage de cet état animé à cet autre état, dont on ne sait pas grand-chose. L'âme, qui s'apparenterait au souffle selon son étymologie, abandonnerait notre corps, en s'élançant du bord de nos lèvres lors de notre dernier souffle."
+        }
+      ],
+      "spotify": "",
+      "episodes": [
+        {
+          "id": 1,
+          "title": "Fumée et Pardon",
+          "duration": "9:50",
+          "sec": 590,
+          "src": "assets/audio/chronique/1.mp3"
+        },
+        {
+          "id": 2,
+          "title": "Lise Barkas",
+          "duration": "9:27",
+          "sec": 567,
+          "src": "assets/audio/chronique/2.mp3"
+        },
+        {
+          "id": 3,
+          "title": "Le Souffle des Morts",
+          "duration": "10:31",
+          "sec": 631,
+          "src": "assets/audio/chronique/3.mp3"
+        }
+      ]
+    }
+  ]
+}

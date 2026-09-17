@@ -1,0 +1,16 @@
+{
+  "news": [
+    {
+      "id": "exemple",
+      "actif": false,
+      "titre": "Mourir c'est pas si grave sur la RTBF",
+      "debut": "2026-01-01",
+      "fin": "2026-12-31",
+      "mode": "popup",
+      "url": "",
+      "blocks": [
+        { "type": "text", "md": "Exemple d'annonce : texte, **lien**, image ou vidéo. Passer `actif` à `true` pour l'afficher sous le nom." }
+      ]
+    }
+  ]
+}

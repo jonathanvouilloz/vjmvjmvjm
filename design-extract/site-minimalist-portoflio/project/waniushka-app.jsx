@@ -1,10 +1,10 @@
 /* waniushka-app.jsx — Itération 2 : maquette IA Vania Jaikin Miyazaki */
 const { useState, useEffect, useCallback, useMemo, useRef } = React;
 const {
-  HOME_PHOTOS, KINEMATIK, ALBUMS, CARNETS, CARNETS_ALL, ALEAS, BIO,
+  HOME_PHOTOS, KINEMATIK, ALBUMS, CARNETS, CARNETS_ALL, ALEAS, BIO, LECTURE, activeNews,
   ThemeToggle, PageTransition, Page, MasonryGrid, AudioPlayer, MediaOverlay, Popup,
-  IconHome, IconMountain, IconStar, IconMenu, IconButton,
-  SOCIAL_ICONS, RichText, SpotifyEmbed,
+  IconHome, IconMountain, IconStar, IconMenu, IconButton, BrandIcon,
+  SOCIAL_ICONS, SpotifyEmbed, Blocks, Html, SketchFrame,
   useMediaQuery, seededRandom,
 } = window;
 
@@ -35,7 +35,6 @@ const SIGLES = {
   carnets: { left: 'assets/brand/nav-eye-left.svg', right: 'assets/brand/nav-eye-right.svg' },
   lecture: { left: 'assets/brand/sigle-etoile-1.svg', right: 'assets/brand/sigle-etoile-2.svg' },
   contact: { glyph: '✈', mirror: true },
-  biofilmo: { left: 'assets/brand/sigle-camera-1.svg', right: 'assets/brand/sigle-camera-2.svg' },
 };
 
 /* Un sigle : dessin scanné ou glyphe. `flip` désigne l'exemplaire de gauche — il retourne
@@ -72,7 +71,8 @@ function SectionTitleButton({ id, label, onClick, show = true, delay = 0, size =
   return (
     <button onClick={onClick} style={{
       background: 'none', border: 'none', cursor: 'pointer', color: 'var(--fg)',
-      fontFamily: 'var(--font-digital)', fontWeight: 400,
+      /* Open Sans à la demande de Vania (Manrope la fatiguait) — réglable dans site.json */
+      fontFamily: 'var(--font-menu)', fontWeight: 400,
       fontSize: big ? 'clamp(1.3rem, 3.2vw, 2rem)' : '1.02rem', letterSpacing: '0.04em',
       display: 'flex', alignItems: 'center', gap: big ? 18 : 12,
       whiteSpace: 'nowrap',
@@ -114,9 +114,39 @@ function BackLink({ label, onClick }) {
 }
 
 /* ═══════════════════ EN-TÊTE ═══════════════════ */
+/* Encart « news » sous le nom : n'existe que s'il y a une annonce active (content/news.json).
+   Au clic : pop-up dessinée, ou lien externe si l'annonce pointe ailleurs. */
+function NewsTag({ news, onOpen, compact }) {
+  const [hov, setHov] = useState(false);
+  const style = {
+    position: 'absolute', left: 2, top: 'calc(100% - 4px)',
+    display: 'flex', alignItems: 'center', gap: 7, maxWidth: compact ? '30vw' : 280,
+    background: 'none', border: 'none', cursor: 'pointer', padding: '4px 0',
+    color: 'var(--fg)', fontFamily: 'var(--font-digital)', fontSize: compact ? 11 : 12,
+    letterSpacing: '0.06em', textDecoration: 'none', whiteSpace: 'nowrap',
+    opacity: hov ? 1 : 0.75, transition: 'opacity 0.25s',
+  };
+  const inner = (
+    <React.Fragment>
+      <span aria-hidden="true" style={{
+        width: 6, height: 6, borderRadius: '50%', background: 'var(--fg)', flexShrink: 0,
+        animation: 'pulse 2.4s ease-in-out infinite',
+      }} />
+      <span style={{ textTransform: 'uppercase', fontSize: '0.9em', letterSpacing: '0.14em' }}>news</span>
+      <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', textDecoration: 'underline', textDecorationColor: 'var(--fg-subtle)', textUnderlineOffset: '0.2em' }}>{news.titre}</span>
+    </React.Fragment>
+  );
+  const hover = { onMouseEnter: () => setHov(true), onMouseLeave: () => setHov(false) };
+  return news.mode === 'lien' && news.url ? (
+    <a href={news.url} target="_blank" rel="noopener noreferrer" style={style} {...hover}>{inner}</a>
+  ) : (
+    <button onClick={onOpen} style={style} {...hover}>{inner}</button>
+  );
+}
+
 /* Composition constante sur toutes les pages :
-   nom (gauche) · maison / étoile / thème / montagne (centre) · hamburger (droite) */
-function Header({ theme, onToggleTheme, onHome, onMenuToggle, menuOpen, onStar, onMountain, onName }) {
+   nom (+ news) (gauche) · maison / étoile / thème / montagne (centre) · hamburger (droite) */
+function Header({ theme, onToggleTheme, onHome, onMenuToggle, menuOpen, onStar, onMountain, onName, news, onNews }) {
   const [nameHov, setNameHov] = useState(false);
   const isMobile = useMediaQuery('(max-width: 680px)');
   const isCompact = useMediaQuery('(max-width: 480px)');
@@ -128,7 +158,7 @@ function Header({ theme, onToggleTheme, onHome, onMenuToggle, menuOpen, onStar, 
       paddingLeft: isMobile ? 10 : 'var(--container-pad)', paddingRight: isMobile ? 10 : 'var(--container-pad)',
     }}>
       {/* Gauche : uniquement le nom manuscrit → bio */}
-      <div style={{ display: 'flex', alignItems: 'center', minWidth: 40 }}>
+      <div style={{ display: 'flex', alignItems: 'center', minWidth: 40, position: 'relative' }}>
         <button onClick={onName} title="Bio" aria-label="Vania Jaikin Miyazaki"
           onMouseEnter={() => setNameHov(true)} onMouseLeave={() => setNameHov(false)}
           style={{
@@ -148,15 +178,16 @@ function Header({ theme, onToggleTheme, onHome, onMenuToggle, menuOpen, onStar, 
               height: 'auto', display: 'block', filter: 'var(--ink-invert)',
             }} />
         </button>
+        {news && <NewsTag news={news} onOpen={onNews} compact={isMobile} />}
       </div>
 
-      {/* Centre : maison (menu) · étoile (aléas) · soleil-lune (thème) · montagne (contact) */}
+      {/* Centre : maison (menu) · étoile (aléa) · soleil-lune (thème) · montagne (contact) */}
       <div style={{
         position: 'absolute', left: isMobile ? '55%' : '50%', transform: 'translateX(-50%)',
         display: 'flex', alignItems: 'center', gap: isMobile ? 0 : 4,
       }}>
         <IconButton onClick={onHome} title="Menu"><IconHome /></IconButton>
-        <IconButton onClick={onStar} title="Aléas du jour"><IconStar /></IconButton>
+        <IconButton onClick={onStar} title="Aléa du jour"><IconStar /></IconButton>
         <ThemeToggle theme={theme} onToggle={onToggleTheme} />
         <IconButton onClick={onMountain} title="Dessin & contact"><IconMountain /></IconButton>
       </div>
@@ -234,7 +265,7 @@ function MenuDropdown({ onClose, onNavigate }) {
   );
 }
 
-/* ═══════════════════ ALÉAS DU JOUR ═══════════════════ */
+/* ═══════════════════ ALÉA DU JOUR ═══════════════════ */
 /* Une pop-up posée sur la page courante, qui reste visible dessous : `Popup` fournit la
    carte, la croix en haut à droite, Échap et le clic extérieur. Ni titre ni « cliquer pour
    refermer » — la croix suffit.
@@ -283,7 +314,7 @@ function FullscreenAleaOverlay({ src, onClose }) {
       cancelAnimationFrame(raf);
       document.body.style.overflow = previousOverflow;
       window.removeEventListener('keydown', onKeyDown);
-      document.querySelector('[aria-label="Aléas du jour"]')?.focus();
+      document.querySelector('[aria-label="Aléa du jour"]')?.focus();
     };
   }, [onClose]);
 
@@ -329,20 +360,130 @@ function Accueil({ onEnter }) {
 }
 
 /* ═══════════════════ MENU ═══════════════════ */
+/* Semis de points qui suivent la souris — variante du grain d'iirrm.ch que Vania a montré.
+   Un fin semis de points d'encre (pleins et gris) couvre la page ; autour du curseur, ils
+   sont happés et tournent autour de lui, puis regagnent leur place quand il s'éloigne.
+   Canvas fixe sans interaction ; coupé au tactile et en mouvement réduit (le semis reste,
+   immobile) ; la boucle s'endort dès que tout est revenu au repos. */
+function DotField() {
+  const ref = useRef(null);
+  useEffect(() => {
+    const canvas = ref.current;
+    const ctx = canvas.getContext('2d');
+    const still = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+      || window.matchMedia('(pointer: coarse)').matches;
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    const RADIUS = 190;
+    let dots = [];
+    let w = 0, h = 0, raf = 0, awake = false;
+    const mouse = { x: -9999, y: -9999, active: false };
+    const colors = () => {
+      const cs = getComputedStyle(document.documentElement);
+      return [cs.getPropertyValue('--fg').trim() || '#1A1A1A', cs.getPropertyValue('--fg-muted').trim() || '#8A8A8A'];
+    };
+
+    const seed = () => {
+      w = window.innerWidth; h = window.innerHeight;
+      canvas.width = Math.round(w * dpr); canvas.height = Math.round(h * dpr);
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      const n = Math.round((w * h) / 1100);
+      dots = Array.from({ length: n }, (_, i) => {
+        const hx = seededRandom(i * 3 + 1) * w, hy = seededRandom(i * 3 + 2) * h;
+        return {
+          hx, hy, x: hx, y: hy, vx: 0, vy: 0,
+          r: 0.5 + seededRandom(i * 3 + 3) * 0.9,
+          tone: seededRandom(i * 7 + 5) > 0.72 ? 1 : 0,
+          spin: seededRandom(i * 11) > 0.5 ? 1 : -1,
+        };
+      });
+    };
+
+    const draw = () => {
+      const [ink, grey] = colors();
+      ctx.clearRect(0, 0, w, h);
+      for (const tone of [0, 1]) {
+        ctx.fillStyle = tone ? grey : ink;
+        ctx.beginPath();
+        for (const d of dots) {
+          if (d.tone !== tone) continue;
+          ctx.moveTo(d.x + d.r, d.y);
+          ctx.arc(d.x, d.y, d.r, 0, Math.PI * 2);
+        }
+        ctx.fill();
+      }
+    };
+
+    const step = () => {
+      let moving = mouse.active;
+      for (const d of dots) {
+        let ax = (d.hx - d.x) * 0.012, ay = (d.hy - d.y) * 0.012; // rappel vers la place
+        if (mouse.active) {
+          const dx = mouse.x - d.hx, dy = mouse.y - d.hy;
+          const dist = Math.hypot(dx, dy);
+          if (dist < RADIUS) {
+            const pull = (1 - dist / RADIUS);
+            const px = mouse.x - d.x, py = mouse.y - d.y;
+            const pd = Math.hypot(px, py) || 1;
+            // attiré vers un anneau autour du curseur, et entraîné tangentiellement
+            const ring = 14 + d.r * 40;
+            const f = (pd - ring) * 0.035 * pull;
+            ax += (px / pd) * f - (py / pd) * d.spin * pull * 1.6;
+            ay += (py / pd) * f + (px / pd) * d.spin * pull * 1.6;
+          }
+        }
+        d.vx = (d.vx + ax) * 0.86; d.vy = (d.vy + ay) * 0.86;
+        d.x += d.vx; d.y += d.vy;
+        if (Math.abs(d.vx) + Math.abs(d.vy) > 0.02 || Math.abs(d.x - d.hx) + Math.abs(d.y - d.hy) > 0.3) moving = true;
+      }
+      draw();
+      if (moving) raf = requestAnimationFrame(step);
+      else awake = false;
+    };
+    const wake = () => { if (!awake) { awake = true; raf = requestAnimationFrame(step); } };
+
+    const onMove = (e) => { mouse.x = e.clientX; mouse.y = e.clientY; mouse.active = true; wake(); };
+    const onLeave = () => { mouse.active = false; wake(); };
+    const onResize = () => { seed(); draw(); };
+    seed(); draw();
+    // le thème change la couleur de l'encre : on redessine quand <html data-theme> bouge
+    const mo = new MutationObserver(() => draw());
+    mo.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+    window.addEventListener('resize', onResize);
+    if (!still) {
+      window.addEventListener('pointermove', onMove);
+      document.documentElement.addEventListener('pointerleave', onLeave);
+    }
+    return () => {
+      cancelAnimationFrame(raf);
+      mo.disconnect();
+      window.removeEventListener('resize', onResize);
+      window.removeEventListener('pointermove', onMove);
+      document.documentElement.removeEventListener('pointerleave', onLeave);
+    };
+  }, []);
+  return <canvas ref={ref} aria-hidden="true" style={{
+    position: 'fixed', inset: 0, width: '100vw', height: '100vh', pointerEvents: 'none', zIndex: 0,
+  }} />;
+}
+
 function Menu({ onNavigate }) {
   const [show, setShow] = useState(false);
   useEffect(() => { const t = setTimeout(() => setShow(true), 100); return () => clearTimeout(t); }, []);
   return (
-    <div style={{
-      minHeight: '100vh', display: 'flex', flexDirection: 'column',
-      alignItems: 'center', justifyContent: 'center', gap: 30,
-      opacity: show ? 1 : 0, transition: 'opacity 0.8s ease',
-    }}>
-      {SECTIONS_VISIBLES.map((it) => (
-        <SectionTitleButton key={it.id} id={it.id} label={it.label} onClick={() => onNavigate(it.id)} />
-      ))}
-      <SecondaryLinks onNavigate={onNavigate} />
-    </div>
+    <React.Fragment>
+      <DotField />
+      <div style={{
+        position: 'relative', zIndex: 1,
+        minHeight: '100vh', display: 'flex', flexDirection: 'column',
+        alignItems: 'center', justifyContent: 'center', gap: 30,
+        opacity: show ? 1 : 0, transition: 'opacity 0.8s ease',
+      }}>
+        {SECTIONS_VISIBLES.map((it) => (
+          <SectionTitleButton key={it.id} id={it.id} label={it.label} onClick={() => onNavigate(it.id)} />
+        ))}
+        <SecondaryLinks onNavigate={onNavigate} />
+      </div>
+    </React.Fragment>
   );
 }
 
@@ -426,6 +567,16 @@ function KinTile({ v, index, isMob, onClick }) {
       <div style={{ position: 'relative', width: '100%', aspectRatio: tf.ratio, background: 'var(--fg-subtle)', overflow: 'hidden' }}>
         <img src={`assets/kinematik/${v.id}.jpg`} alt={v.titre} loading="lazy"
           style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
+        {/* Information exceptionnelle (sélection, prix, diffusion…) : toujours visible, posée
+            sur l'image comme une étiquette ; le voile du survol passe par-dessus. */}
+        {v.mention && (
+          <span style={{
+            position: 'absolute', left: 0, bottom: 0, maxWidth: '100%',
+            background: 'var(--bg)', color: 'var(--fg)', padding: '4px 9px 5px',
+            fontFamily: 'var(--font-digital)', fontSize: isMob ? 10 : 11, letterSpacing: '0.05em',
+            lineHeight: 1.35,
+          }}>{v.mention}</span>
+        )}
         {/* Voile franc dans la couleur du site : atténuer l'image ne suffisait pas, la durée
             et l'année devenaient illisibles selon la photo. Ici c'est vraiment noir sur blanc
             (et blanc sur noir en thème sombre). */}
@@ -688,16 +839,122 @@ const DrawCanvas = React.forwardRef(function DrawCanvas({ theme }, apiRef) {
   );
 });
 
-/* Réserve éditoriale : aucun modèle de texte n'est imposé avant la réflexion sur la
-   présentation et la structure. Le titre confirme seulement la destination au visiteur. */
-function ReadingPage({ onBack }) {
+/* ═══════════════════ COIN LECTURE ═══════════════════ */
+/* Collage de vignettes « de traviole », comme les carnets : largeur, décalage et rotation
+   tirés de `seededRandom`. Chaque vignette montre au choix un titre, un extrait ou une image
+   (content/lecture/*.json → `vignette.type`). Les vignettes de texte ont un cadre dessiné. */
+function ReadingTile({ t, index, isMob, onOpen }) {
+  const [hov, setHov] = useState(false);
+  const v = t.vignette || { type: 'titre' };
+  const type = v.type === 'image' && !v.image ? 'titre' : v.type;
+  const tf = useMemo(() => {
+    const w = isMob ? 92 + seededRandom(index + 300) * 8 : 72 + seededRandom(index + 300) * 28;
+    return {
+      w, shift: (100 - w) * seededRandom(index + 250),
+      base: `rotate(${((seededRandom(index + 7) - 0.5) * (isMob ? 2 : 4.5)).toFixed(2)}deg) `
+        + `translateY(${((seededRandom(index + 100) - 0.5) * 16).toFixed(1)}px)`,
+      scale: 0.9 + seededRandom(index + 40) * 0.35, // la taille du texte varie d'une vignette à l'autre
+    };
+  }, [index, isMob]);
+
+  const title = (size) => (
+    <React.Fragment>
+      {t.surtitre && (
+        <span style={{ display: 'block', fontFamily: 'var(--font-digital)', fontSize: 11, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--fg-muted)', marginBottom: 8 }}>{t.surtitre}</span>
+      )}
+      <span style={{ display: 'block', fontFamily: 'var(--font-heading)', fontSize: size, lineHeight: 1.2 }}>{t.titre}</span>
+    </React.Fragment>
+  );
+
+  return (
+    <button onClick={onOpen} onMouseEnter={() => setHov(true)} onMouseLeave={() => setHov(false)}
+      aria-label={`Lire « ${t.titre} »`}
+      style={{
+        display: 'block', breakInside: 'avoid', width: `${tf.w.toFixed(1)}%`, marginLeft: `${tf.shift.toFixed(1)}%`,
+        marginBottom: isMob ? 36 : 56, padding: 0, border: 'none', background: 'none', color: 'var(--fg)',
+        textAlign: 'left', cursor: 'pointer', position: 'relative',
+        transform: hov ? `${tf.base} scale(1.025)` : tf.base, transition: 'transform 0.3s ease',
+      }}>
+      {type === 'image' ? (
+        <React.Fragment>
+          <img src={v.image} alt="" loading="lazy" style={{ width: '100%', height: 'auto', display: 'block' }} />
+          <span style={{ display: 'block', marginTop: 12 }}>{title(`${(1.05 * tf.scale).toFixed(2)}rem`)}</span>
+        </React.Fragment>
+      ) : (
+        <span style={{ display: 'block', position: 'relative', padding: 'clamp(22px, 2.6vw, 34px)' }}>
+          <SketchFrame seed={index + 11} strokeWidth={1.1} />
+          {type === 'extrait' && v.extrait ? (
+            <React.Fragment>
+              <span style={{
+                display: 'block', fontFamily: 'var(--font-body)', fontStyle: 'italic',
+                fontSize: `${(1.08 * tf.scale).toFixed(2)}rem`, lineHeight: 1.55, marginBottom: 18,
+              }}>« {v.extrait} »</span>
+              {title('0.98rem')}
+            </React.Fragment>
+          ) : title(`${(1.5 * tf.scale).toFixed(2)}rem`)}
+        </span>
+      )}
+    </button>
+  );
+}
+
+function ReadingPage({ onBack, onOpenText }) {
+  const isMob = useMediaQuery('(max-width: 760px)');
   return (
     <Page>
-      <BackLink label="Retour au menu" onClick={onBack} />
-      <h1 style={{
-        fontFamily: 'var(--font-digital)', fontSize: 'clamp(1.5rem, 3vw, 2rem)',
-        fontWeight: 400, letterSpacing: '0.04em', margin: 0,
-      }}>Coin lecture</h1>
+      {/* la flèche suffit : pas de libellé, pas de titre */}
+      <BackLink onClick={onBack} />
+      <div style={{ columnCount: isMob ? 1 : 3, columnGap: 56, paddingTop: 8 }}>
+        {LECTURE.map((t, i) => (
+          <ReadingTile key={t.id} t={t} index={i} isMob={isMob} onOpen={() => onOpenText(t.id)} />
+        ))}
+      </div>
+    </Page>
+  );
+}
+
+/* Un texte en plein cadre : colonne de lecture, blocs (texte, images, vidéos, sons),
+   notes de bas de page avec aller-retour, et le contexte (date, lieu, source) en haut ou
+   en bas selon le fichier. Les ancres des notes défilent sans toucher à l'URL : le site
+   n'a pas de routeur, un `#note-1` n'y signifierait rien au rechargement. */
+function ReadingText({ text, onBack }) {
+  const onClick = (e) => {
+    const a = e.target.closest && e.target.closest('a[href^="#note-"], a[href^="#ref-"]');
+    if (!a) return;
+    e.preventDefault();
+    document.getElementById(a.getAttribute('href').slice(1))?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  };
+  const contexte = text.contexte && (
+    <p style={{
+      fontFamily: 'var(--font-digital)', fontSize: 13, letterSpacing: '0.04em', color: 'var(--fg-muted)',
+      margin: text.contextePosition === 'bas' ? '3em 0 0' : '0 0 2.4em',
+    }}>{text.contexte}</p>
+  );
+  return (
+    <Page variant="prose">
+      <BackLink label="retour au coin lecture" onClick={onBack} />
+      <article onClick={onClick} style={{ fontSize: 'clamp(1.08rem, 1.5vw, 1.24rem)' }}>
+        {text.contextePosition !== 'bas' && contexte}
+        <header style={{ marginBottom: '2.2em' }}>
+          {text.surtitre && (
+            <p style={{ fontFamily: 'var(--font-digital)', fontSize: 12, letterSpacing: '0.16em', textTransform: 'uppercase', color: 'var(--fg-muted)', marginBottom: 12 }}>{text.surtitre}</p>
+          )}
+          <h1 style={{ fontFamily: 'var(--font-heading)', fontWeight: 400, fontSize: 'clamp(1.8rem, 3.6vw, 2.6rem)', lineHeight: 1.15 }}>{text.titre}</h1>
+        </header>
+        <Blocks blocks={text.blocks} />
+        {text.notes && text.notes.length > 0 && (
+          <ol className="vjm-notes vjm-prose" aria-label="Notes">
+            {text.notes.map((n, i) => (
+              <li key={i} id={`note-${i + 1}`}>
+                <a href={`#ref-${i + 1}`} aria-label={`Retour à l'appel de note ${i + 1}`}
+                  style={{ fontFamily: 'var(--font-digital)', textDecoration: 'none', flexShrink: 0 }}>{i + 1}</a>
+                <Html html={n.html} />
+              </li>
+            ))}
+          </ol>
+        )}
+        {text.contextePosition === 'bas' && contexte}
+      </article>
     </Page>
   );
 }
@@ -775,7 +1032,8 @@ function ContactPage({ theme }) {
             <SocialLinks />
             <div style={{ marginTop: 16, fontSize: 15, color: 'var(--fg-muted)', lineHeight: 1.7 }}>
               <a href={`mailto:${BIO.email}`} style={{ textUnderlineOffset: '0.18em' }}>{BIO.email}</a>
-              <p style={{ marginTop: 8 }}>Pour faire des cadeaux, voici mon IBAN.<br /><span style={{ color: 'var(--fg)' }}>{BIO.iban}</span></p>
+              {/* l'IBAN seul, sans phrase d'introduction — à la demande de Vania */}
+              <p style={{ marginTop: 8, color: 'var(--fg)', fontFamily: 'var(--font-digital)', fontSize: 14, letterSpacing: '0.04em' }}>{BIO.iban}</p>
             </div>
           </div>
         </div>
@@ -804,19 +1062,44 @@ function SocialLinks() {
 }
 
 /* ═══════════════════ BIO ═══════════════════ */
-const sectionLabel = {
-  margin: '36px 0 14px', fontFamily: 'var(--font-digital)', fontSize: 11,
-  letterSpacing: '0.16em', textTransform: 'uppercase', color: 'var(--fg-muted)',
-};
+/* Langue de la bio : retenue d'une visite à l'autre, sans en dépendre (navigation privée,
+   stockage bloqué → français). */
+const LANG_KEY = 'vjm-bio-lang';
+function readLang() {
+  try { return window.localStorage.getItem(LANG_KEY) === 'en' ? 'en' : 'fr'; } catch { return 'fr'; }
+}
+function writeLang(lang) {
+  try { window.localStorage.setItem(LANG_KEY, lang); } catch { /* stockage indisponible */ }
+}
 
-/* La bio se lit en deux temps. La page ne porte plus que le texte de présentation — celui
-   que Vania avait écrit en manuscrite dans son PDF, désormais en Newsreader comme le reste :
-   à la lecture-test, tout ce qui était « écrit à la main ou dans une police un peu spéciale »
-   décourageait de lire. Le CV réel (biofilmographie + art contemporain) part en pop-up,
-   derrière un lien : il est là pour qui le cherche, il n'écrase plus la présentation. */
+function LangSwitch({ lang, onChange }) {
+  const opt = (code, label) => (
+    <button onClick={() => onChange(code)} aria-pressed={lang === code} lang={code} style={{
+      background: 'none', border: 'none', cursor: 'pointer', padding: '6px 4px',
+      fontFamily: 'var(--font-digital)', fontSize: 12, letterSpacing: '0.14em',
+      color: lang === code ? 'var(--fg)' : 'var(--fg-muted)',
+      textDecoration: lang === code ? 'underline' : 'none', textUnderlineOffset: '0.35em',
+    }}>{label}</button>
+  );
+  return (
+    <div role="group" aria-label="Langue de la bio" style={{ display: 'flex', alignItems: 'center', gap: 4, marginBottom: 22 }}>
+      {opt('fr', 'FR')}
+      <span aria-hidden="true" style={{ color: 'var(--fg-subtle)' }}>·</span>
+      {opt('en', 'EN')}
+    </div>
+  );
+}
+
+/* La bio « sérieuse » est sur la page, en français ou en anglais. L'autre — la vraie, dit
+   Vania — attend derrière un œil dessiné, dans une pop-up tracée à la main. L'œil se masque
+   depuis content/site.json (`bioOeilVisible`) si elle se lasse de ce texte. */
 function BioPage() {
   const isMob = useMediaQuery('(max-width: 760px)');
-  const [filmoOpen, setFilmoOpen] = useState(false);
+  const [persoOpen, setPersoOpen] = useState(false);
+  const [lang, setLang] = useState(readLang);
+  const [eyeHov, setEyeHov] = useState(false);
+  const textes = BIO.textes[lang] || BIO.textes.fr;
+  const changeLang = (l) => { setLang(l); writeLang(l); };
   const portrait = useMemo(() => BIO.portraits[Math.floor(Math.random() * BIO.portraits.length)], []);
   const portraitImg = (
     <img src={portrait} alt="Vania Jaikin Miyazaki" loading="lazy" style={{
@@ -831,18 +1114,26 @@ function BioPage() {
         gap: 'var(--block-gap)', alignItems: 'start',
       }}>
         {isMob && portraitImg}
-        <div style={{ fontFamily: 'var(--font-body)', lineHeight: 1.7, maxWidth: 720 }}>
-          {/* un cran au-dessus du corps courant : c'est le seul texte de la page */}
-          <div style={{ fontSize: 'clamp(1.15rem, 1.6vw, 1.35rem)' }}>
-            {BIO.intro.map((p, i) => (
-              <p key={i} style={{ marginBottom: 18, opacity: 0.92 }}>{p}</p>
-            ))}
+        <div style={{ maxWidth: 720 }}>
+          <LangSwitch lang={lang} onChange={changeLang} />
+          <div lang={lang} style={{ fontSize: 'clamp(1.05rem, 1.4vw, 1.2rem)' }}>
+            <Blocks blocks={textes.pro} />
           </div>
-          <div style={{ marginTop: 'var(--block-gap)' }}>
-            <SectionTitleButton id="biofilmo" label="Biofilmographie" size="menu"
-              onClick={() => setFilmoOpen(true)} />
-          </div>
-          <p style={{ marginTop: 30, fontSize: 15, color: 'var(--fg-muted)' }}>
+          {BIO.bioOeilVisible && (
+            <button onClick={() => setPersoOpen(true)}
+              aria-label={lang === 'en' ? 'The other bio' : 'L’autre bio'}
+              onMouseEnter={() => setEyeHov(true)} onMouseLeave={() => setEyeHov(false)}
+              style={{
+                marginTop: 'var(--block-gap)', background: 'none', border: 'none', cursor: 'pointer',
+                padding: 6, lineHeight: 0, color: 'var(--fg)',
+                opacity: eyeHov ? 1 : 0.8,
+                transform: eyeHov ? 'scale(1.12) rotate(-4deg)' : 'none',
+                transition: 'opacity 0.25s, transform 0.3s ease',
+              }}>
+              <BrandIcon src="assets/brand/nav-eye-middle.svg" size={46} />
+            </button>
+          )}
+          <p style={{ marginTop: 30, fontSize: 15, color: 'var(--fg-muted)', fontFamily: 'var(--font-body)' }}>
             {BIO.email}
           </p>
         </div>
@@ -851,22 +1142,10 @@ function BioPage() {
         )}
       </div>
 
-      {filmoOpen && (
-        <Popup onClose={() => setFilmoOpen(false)} maxWidth={720} padding="52px 44px 40px">
-          {/* `Popup` ne défile pas — le CV complet déborde de l'écran, on lui donne sa
-              propre zone de défilement plutôt que de changer une carte partagée avec les
-              aléas et les infos d'album. */}
-          <div style={{
-            maxHeight: '70vh', overflowY: 'auto',
-            fontFamily: 'var(--font-body)', fontSize: 'clamp(1rem, 1.4vw, 1.1rem)', lineHeight: 1.7,
-          }}>
-            {BIO.filmo.map((parts, i) => (
-              <p key={i} style={{ marginBottom: 16, opacity: 0.92 }}><RichText parts={parts} /></p>
-            ))}
-            <p style={sectionLabel}>Art contemporain</p>
-            {BIO.art.map((parts, i) => (
-              <p key={i} style={{ marginBottom: 8, opacity: 0.92 }}><RichText parts={parts} /></p>
-            ))}
+      {persoOpen && (
+        <Popup sketch seed={5} maxWidth={720} onClose={() => setPersoOpen(false)} label="Bio">
+          <div lang={lang} style={{ fontSize: 'clamp(1.05rem, 1.5vw, 1.2rem)' }}>
+            <Blocks blocks={textes.perso} />
           </div>
         </Popup>
       )}
@@ -882,7 +1161,10 @@ function App() {
   const [aleas, setAleas] = useState(null);       // phrase courante ou null
   const [infoAlbum, setInfoAlbum] = useState(null); // album id ou null
   const [albumId, setAlbumId] = useState(null);
+  const [textId, setTextId] = useState(null);      // texte ouvert du Coin lecture
   const [media, setMedia] = useState(null);        // { items, index } ou null
+  const [newsOpen, setNewsOpen] = useState(false);
+  const news = useMemo(() => activeNews(), []);
 
   useGlobalTypo(theme);
 
@@ -892,9 +1174,12 @@ function App() {
   const openMedia = useCallback((items, index) => setMedia({ items, index }), []);
   const mediaPrev = useCallback(() => setMedia((m) => ({ ...m, index: (m.index - 1 + m.items.length) % m.items.length })), []);
   const mediaNext = useCallback(() => setMedia((m) => ({ ...m, index: (m.index + 1) % m.items.length })), []);
+  const closeInfo = useCallback(() => setInfoAlbum(null), []);
+  const closeNews = useCallback(() => setNewsOpen(false), []);
 
   const activeAlbum = useMemo(() => ALBUMS.find((a) => a.id === albumId), [albumId]);
   const infoAlbumObj = useMemo(() => ALBUMS.find((a) => a.id === infoAlbum), [infoAlbum]);
+  const activeText = useMemo(() => LECTURE.find((t) => t.id === textId), [textId]);
 
   const showHeader = page !== 'accueil';
 
@@ -906,7 +1191,10 @@ function App() {
       case 'films':   return <FilmsPage onOpenAlbum={(id) => { setAlbumId(id); setPage('album'); }} onInfo={setInfoAlbum} onBack={() => go('menu')} />;
       case 'album':   return <AlbumPage album={activeAlbum} onBack={() => go('films')} onInfo={setInfoAlbum} />;
       case 'carnets': return <CarnetsPage onOpenMedia={openMedia} onBack={() => go('menu')} />;
-      case 'lecture': return <ReadingPage onBack={() => go('menu')} />;
+      case 'lecture': return <ReadingPage onBack={() => go('menu')} onOpenText={(id) => { setTextId(id); setPage('texte'); }} />;
+      case 'texte':   return activeText
+        ? <ReadingText text={activeText} onBack={() => go('lecture')} />
+        : <ReadingPage onBack={() => go('menu')} onOpenText={(id) => setTextId(id)} />;
       case 'contact': return <ContactPage theme={theme} />;
       case 'bio':     return <BioPage />;
       default:        return <Accueil onEnter={() => go('menu')} />;
@@ -920,10 +1208,11 @@ function App() {
           theme={theme} onToggleTheme={toggleTheme}
           onHome={() => go('menu')} onMenuToggle={() => setMenuOpen((v) => !v)} menuOpen={menuOpen}
           onStar={openStar} onMountain={() => go('contact')} onName={() => go('bio')}
+          news={news} onNews={() => setNewsOpen(true)}
         />
       )}
 
-      <PageTransition pageKey={page + '|' + (albumId || '')}>
+      <PageTransition pageKey={page + '|' + (albumId || '') + '|' + (textId || '')}>
         {renderPage()}
       </PageTransition>
 
@@ -934,11 +1223,26 @@ function App() {
       )}
 
       {infoAlbumObj && (
-        <Popup onClose={() => setInfoAlbum(null)}>
-          <p style={{ fontFamily: 'var(--font-heading)', fontSize: 'clamp(1.2rem, 2.6vw, 1.6rem)', marginBottom: 18 }}>{infoAlbumObj.titre}</p>
-          <p style={{ fontFamily: 'var(--font-body)', fontSize: 17, lineHeight: 1.65, opacity: 0.9 }}>
-            <RichText parts={infoAlbumObj.infos} />
-          </p>
+        <Popup sketch seed={ALBUMS.indexOf(infoAlbumObj) + 2} onClose={closeInfo} label={infoAlbumObj.titre}>
+          <p style={{ fontFamily: 'var(--font-heading)', fontSize: 'clamp(1.25rem, 2.6vw, 1.7rem)', marginBottom: 22, paddingRight: 28 }}>{infoAlbumObj.titre}</p>
+          <div style={{ fontSize: 17, opacity: 0.92 }}>
+            <Blocks blocks={infoAlbumObj.infos} />
+          </div>
+        </Popup>
+      )}
+
+      {newsOpen && news && (
+        <Popup sketch seed={9} onClose={closeNews} label={news.titre}>
+          <p style={{ fontFamily: 'var(--font-digital)', fontSize: 11, letterSpacing: '0.16em', textTransform: 'uppercase', color: 'var(--fg-muted)', marginBottom: 10 }}>news</p>
+          <p style={{ fontFamily: 'var(--font-heading)', fontSize: 'clamp(1.25rem, 2.6vw, 1.7rem)', marginBottom: 22, paddingRight: 28 }}>{news.titre}</p>
+          <div style={{ fontSize: 17 }}>
+            <Blocks blocks={news.blocks} />
+          </div>
+          {news.url && (
+            <p className="vjm-prose" style={{ marginTop: 18, fontSize: 15 }}>
+              <a href={news.url} target="_blank" rel="noopener noreferrer">{news.url.replace(/^https?:\/\//, '')} ↗</a>
+            </p>
+          )}
         </Popup>
       )}
 

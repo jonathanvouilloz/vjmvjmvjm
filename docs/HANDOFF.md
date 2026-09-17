@@ -1,12 +1,21 @@
-# HANDOFF — 2026-08-08
+# HANDOFF — 2026-09-17
 
 ## Features actives
 | Feature | Fichier | Statut |
 |---------|---------|--------|
-| Itérations 2 → 4 — maquette MVP (wireframes + retours Vania) | docs/features/maquette-iteration-2.md | **EN COURS** |
+| Itérations 2 → 4 — maquette MVP (wireframes + retours Vania) | docs/features/maquette-iteration-2.md | DONE |
+| Itération 5 — contenu éditable (CMS prêt), Coin lecture, news, bio FR/EN | docs/features/iteration-5-contenu-editable.md | **DONE — CMS à activer** |
 | Site propre v1 (reconstruction) | — | EN ATTENTE |
 
 ## Reprendre ici
+**Itération 5 (2026-09-17).** Le contenu vit dans `content/` et le build le rend sur
+`window.CONTENT`. Le schéma Sveltia est dans `admin/config.yml` : le CMS attend le repo
+GitHub et le déploiement Netlify depuis git. Le Coin lecture, les news, la bio FR/EN derrière
+l'œil, le « i » Kinematik et le curseur du menu sont livrés. Détail et points à surveiller →
+`docs/features/iteration-5-contenu-editable.md`.
+Pour modifier un texte : éditer `content/…` puis `node precompile.mjs`.
+
+**Historique — itération 4 :**
 Itération 4 livrée : bio allégée (présentation seule, en Newsreader) + biofilmographie en pop-up
 derrière les deux caméras dessinées ; aléas passés aux 24 phrases manuscrites de Vania ; player
 audio réel sur les vrais MP3 (kdrive) avec durées ffprobe et embed Spotify pour les coquillages ;
@@ -42,4 +51,4 @@ attendant), la section « livres » (câblée, masquée par `hidden: true`), un 
   (→ `waniushka-netlify.zip`, contenu de `dist/` à la racine, glisser-déposer).
 - Après une livraison d'images de Vania : `python tools/import-images.py` puis rebuild.
 
-Pas de git dans ce dossier.
+Git local (pas de remote).

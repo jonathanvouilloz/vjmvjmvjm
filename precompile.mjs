@@ -2,6 +2,7 @@ import { transformSync } from "@babel/core";
 import presetReact from "@babel/preset-react";
 import fs from "node:fs";
 import path from "node:path";
+import { loadContent } from "./tools/build-content.mjs";
 
 // `node precompile.mjs`        → build de travail à la racine (panneau Tweaks inclus + auto-ouvert)
 // `node precompile.mjs --prod` → build de déploiement dans dist/ (sans Tweaks, assets copiés)
@@ -21,7 +22,13 @@ const app    = read(`${PROJ}/waniushka-app.jsx`);
 // images sur `window` — il passe donc AVANT les composants, qui le lisent au chargement.
 // Le panneau Tweaks n'est plus utilisé par l'app (aucune référence dans app/components) :
 // on le laisse hors du bundle de prod.
+// `content/` : ce que le CMS éditera. Le Markdown y est rendu au build ; le résultat est posé
+// sur `window.CONTENT` avant les composants, comme l'inventaire des images.
+const CONTENT = loadContent();
+const content = `window.CONTENT = ${JSON.stringify(CONTENT)};`;
+
 const source = (PROD ? "" : wrap("tweaks-panel.jsx", tweaks))
+  + wrap("content", content)
   + wrap("waniushka-assets.jsx", assets)
   + wrap("waniushka-components.jsx", comps) + wrap("waniushka-app.jsx", app);
 
@@ -44,6 +51,11 @@ fs.mkdirSync(OUT, { recursive: true });
 fs.writeFileSync(`${OUT}/waniushka.bundle.js`, code + "\n" + activate, "utf8");
 
 let html = read(`${PROJ}/Waniushka Portfolio.html`);
+// Police des titres du menu : réglable dans content/site.json, chargée depuis Google Fonts.
+const menuFont = CONTENT.site.policeMenu || "Open Sans";
+html = html
+  .replace("family=Open+Sans:", `family=${menuFont.trim().replace(/\s+/g, "+")}:`)
+  .replace("--font-menu: 'Open Sans'", `--font-menu: '${menuFont}'`);
 // Remove the three text/babel script tags + babel.min.js, replace with one plain script.
 html = html.replace(/\s*<script[^>]*babel\.min\.js[^>]*><\/script>/g, "");
 html = html.replace(/\s*<script type="text\/babel"[^>]*><\/script>/g, "");
@@ -84,6 +96,10 @@ if (PROD) {
     }
   };
   copyDir("assets", `${OUT}/assets`);
+  // Interface du CMS (Sveltia) et fichiers d'indexation : servis tels quels.
+  fs.rmSync(`${OUT}/admin`, { recursive: true, force: true });
+  copyDir("admin", `${OUT}/admin`);
+  for (const f of ["robots.txt", "sitemap.xml"]) fs.copyFileSync(`public/${f}`, `${OUT}/${f}`);
 }
 
 console.log("bundle:", fs.statSync(`${OUT}/waniushka.bundle.js`).size, "bytes");
