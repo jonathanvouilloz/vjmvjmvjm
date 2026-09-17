@@ -27,19 +27,20 @@ function useGlobalTypo(theme) {
 }
 
 /* Sigles décoratifs autour des titres de section.
-   Ce sont les dessins de Vania, détourés en PNG transparents par tools/cutout-drawing.py
+   Ce sont les dessins de Vania, découpés depuis les planches SVG par tools/import-vector-sigles.py
    (`src`), sauf le contact où elle a demandé un avion (`glyph`), le second retourné. */
 const SIGLES = {
-  kinematik: { left: 'assets/brand/nav-eye-left.png', right: 'assets/brand/nav-eye-right.png' },
-  films: { left: 'assets/brand/sigle-camera-1.png', right: 'assets/brand/sigle-camera-2.png' },
-  carnets: { left: 'assets/brand/sigle-etoile-1.png', right: 'assets/brand/sigle-etoile-2.png' },
+  kinematik: { left: 'assets/brand/sigle-camera-1.svg', right: 'assets/brand/sigle-camera-2.svg' },
+  films: { left: 'assets/brand/sigle-spirale-1.svg', right: 'assets/brand/sigle-spirale-2.svg' },
+  carnets: { left: 'assets/brand/nav-eye-left.svg', right: 'assets/brand/nav-eye-right.svg' },
+  lecture: { left: 'assets/brand/sigle-etoile-1.svg', right: 'assets/brand/sigle-etoile-2.svg' },
   contact: { glyph: '✈', mirror: true },
-  biofilmo: { left: 'assets/brand/sigle-camera-1.png', right: 'assets/brand/sigle-camera-2.png' },
+  biofilmo: { left: 'assets/brand/sigle-camera-1.svg', right: 'assets/brand/sigle-camera-2.svg' },
 };
 
 /* Un sigle : dessin scanné ou glyphe. `flip` désigne l'exemplaire de gauche — il retourne
    le dessin (l'avion du contact) ou choisit le fichier prévu pour ce côté (les caméras). */
-function Sigle({ id, flip = false, size = '0.8em', opacity = 0.5 }) {
+function Sigle({ id, flip = false, size = '0.8em', opacity = 0.75 }) {
   const s = SIGLES[id];
   if (!s) return null;
   const transform = flip && s.mirror ? 'scaleX(-1)' : 'none';
@@ -55,13 +56,12 @@ function Sigle({ id, flip = false, size = '0.8em', opacity = 0.5 }) {
   return <span aria-hidden="true" style={{ opacity, fontSize: size, display: 'block', transform }}>{s.glyph}</span>;
 }
 
-/* Sections du menu — même source pour la page Menu et le déroulant ≡.
-   `hidden` : la page « livres » est prévue mais pas encore ouverte au public. */
+/* Sections du menu — même source pour la page Menu et le déroulant ≡. */
 const SECTIONS_MENU = [
   { id: 'kinematik', label: 'Kinematik' },
   { id: 'films', label: 'Films pour les oreilles' },
   { id: 'carnets', label: 'Carnets de voyages' },
-  { id: 'livres', label: 'Livres', hidden: true },
+  { id: 'lecture', label: 'Coin lecture' },
 ];
 const SECTIONS_VISIBLES = SECTIONS_MENU.filter((s) => !s.hidden);
 
@@ -115,11 +115,11 @@ function BackLink({ label, onClick }) {
 
 /* ═══════════════════ EN-TÊTE ═══════════════════ */
 /* Composition constante sur toutes les pages :
-   maison (gauche) · étoile / thème / montagne (centre) · hamburger (droite) */
+   nom (gauche) · maison / étoile / thème / montagne (centre) · hamburger (droite) */
 function Header({ theme, onToggleTheme, onHome, onMenuToggle, menuOpen, onStar, onMountain, onName }) {
   const [nameHov, setNameHov] = useState(false);
   const isMobile = useMediaQuery('(max-width: 680px)');
-  const isNarrow = useMediaQuery('(max-width: 360px)');
+  const isCompact = useMediaQuery('(max-width: 480px)');
   return (
     <header style={{
       position: 'fixed', top: 0, left: 0, right: 0, zIndex: 100,
@@ -127,28 +127,35 @@ function Header({ theme, onToggleTheme, onHome, onMenuToggle, menuOpen, onStar, 
       display: 'flex', alignItems: 'center', justifyContent: 'space-between',
       paddingLeft: isMobile ? 10 : 'var(--container-pad)', paddingRight: isMobile ? 10 : 'var(--container-pad)',
     }}>
-      {/* Gauche : maison → menu, suivie du nom manuscrit → bio */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 4, minWidth: 40 }}>
-        {!isNarrow && <IconButton onClick={onHome} title="Menu"><IconHome /></IconButton>}
+      {/* Gauche : uniquement le nom manuscrit → bio */}
+      <div style={{ display: 'flex', alignItems: 'center', minWidth: 40 }}>
         <button onClick={onName} title="Bio" aria-label="Vania Jaikin Miyazaki"
           onMouseEnter={() => setNameHov(true)} onMouseLeave={() => setNameHov(false)}
           style={{
             background: 'none', border: 'none', cursor: 'pointer', padding: '0 2px',
             lineHeight: 0, opacity: nameHov ? 1 : 0.8, transition: 'opacity 0.25s',
           }}>
-          {/* Dessin de Vania détouré ; l'encre noire s'inverse en thème sombre.
-              La version mobile descend à 34 px pour laisser les trois commandes centrales
-              accessibles sans chevauchement, tout en gardant le geste reconnaissable. */}
+          {/* Nom en capitales dessiné par Vania et détouré ; l'encre noire s'inverse en sombre.
+              Sa largeur fluide rend le texte lisible sur desktop sans empiéter sur les quatre
+              commandes centrales aux largeurs mobiles. */}
           <img src="assets/brand/nom-manuscrit.png" alt="Vania Jaikin Miyazaki"
-            style={{ height: isMobile ? 34 : 46, width: 'auto', display: 'block', filter: 'var(--ink-invert)' }} />
+            style={{
+              width: isCompact
+                ? 'clamp(72px, 22.5vw, 110px)'
+                : isMobile
+                  ? 'clamp(100px, 20vw, 136px)'
+                  : 'clamp(180px, 20vw, 250px)',
+              height: 'auto', display: 'block', filter: 'var(--ink-invert)',
+            }} />
         </button>
       </div>
 
-      {/* Centre : étoile (aléas) · soleil-lune (thème) · montagne (contact) */}
+      {/* Centre : maison (menu) · étoile (aléas) · soleil-lune (thème) · montagne (contact) */}
       <div style={{
-        position: 'absolute', left: '50%', transform: 'translateX(-50%)',
+        position: 'absolute', left: isMobile ? '55%' : '50%', transform: 'translateX(-50%)',
         display: 'flex', alignItems: 'center', gap: isMobile ? 0 : 4,
       }}>
+        <IconButton onClick={onHome} title="Menu"><IconHome /></IconButton>
         <IconButton onClick={onStar} title="Aléas du jour"><IconStar /></IconButton>
         <ThemeToggle theme={theme} onToggle={onToggleTheme} />
         <IconButton onClick={onMountain} title="Dessin & contact"><IconMountain /></IconButton>
@@ -446,7 +453,7 @@ function KinTile({ v, index, isMob, onClick }) {
 /* ═══════════════════ FILMS (liste albums) ═══════════════════ */
 function AlbumInfoIcon({ albumId, size = 24 }) {
   const index = Math.max(0, ALBUMS.findIndex((album) => album.id === albumId));
-  return <img src={`assets/brand/info-album-${Math.min(index + 1, 3)}.png`} alt="" aria-hidden="true" style={{
+  return <img src={`assets/brand/info-album-${Math.min(index + 1, 3)}.svg`} alt="" aria-hidden="true" style={{
     width: size, height: size, objectFit: 'contain', display: 'block', filter: 'var(--ink-invert)',
   }} />;
 }
@@ -681,6 +688,20 @@ const DrawCanvas = React.forwardRef(function DrawCanvas({ theme }, apiRef) {
   );
 });
 
+/* Réserve éditoriale : aucun modèle de texte n'est imposé avant la réflexion sur la
+   présentation et la structure. Le titre confirme seulement la destination au visiteur. */
+function ReadingPage({ onBack }) {
+  return (
+    <Page>
+      <BackLink label="Retour au menu" onClick={onBack} />
+      <h1 style={{
+        fontFamily: 'var(--font-digital)', fontSize: 'clamp(1.5rem, 3vw, 2rem)',
+        fontWeight: 400, letterSpacing: '0.04em', margin: 0,
+      }}>Coin lecture</h1>
+    </Page>
+  );
+}
+
 function ContactPage({ theme }) {
   const isMob = useMediaQuery('(max-width: 760px)');
   const canvasRef = useRef(null);
@@ -885,6 +906,7 @@ function App() {
       case 'films':   return <FilmsPage onOpenAlbum={(id) => { setAlbumId(id); setPage('album'); }} onInfo={setInfoAlbum} onBack={() => go('menu')} />;
       case 'album':   return <AlbumPage album={activeAlbum} onBack={() => go('films')} onInfo={setInfoAlbum} />;
       case 'carnets': return <CarnetsPage onOpenMedia={openMedia} onBack={() => go('menu')} />;
+      case 'lecture': return <ReadingPage onBack={() => go('menu')} />;
       case 'contact': return <ContactPage theme={theme} />;
       case 'bio':     return <BioPage />;
       default:        return <Accueil onEnter={() => go('menu')} />;

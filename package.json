@@ -5,7 +5,7 @@
   "main": "index.js",
   "scripts": {
     "test": "node --test tests/site.test.mjs",
-    "build": "node precompile.mjs --prod",
+    "build": "python tools/import-vector-sigles.py && node precompile.mjs --prod && python tools/optimize-dist.py",
     "package:netlify": "python tools/package-netlify.py"
   },
   "keywords": [],

@@ -1,4 +1,4 @@
-"""Empaquette `dist/` en `waniushka-netlify.zip` comme livrable de transport.
+"""Empaquette `dist/` en une RC Netlify immuable et numérotée.
 
 Le contenu de `dist/` est placé à la racine du zip (Netlify sert la racine telle quelle).
 Pour une archive dépassant environ 50 Mo, préférer Netlify CLI au glisser-déposer.
@@ -13,6 +13,7 @@ Usage : python tools/package-netlify.py
 """
 
 import os
+import re
 import sys
 import zipfile
 from pathlib import Path
@@ -21,7 +22,14 @@ sys.stdout.reconfigure(encoding="utf-8", errors="replace")
 
 ROOT = Path(__file__).resolve().parent.parent
 DIST = ROOT / "dist"
-OUT = ROOT / "waniushka-netlify.zip"
+RC_PATTERN = re.compile(r"waniushka-netlify-rc(\d+)\.zip")
+existing = [
+    int(match.group(1))
+    for path in ROOT.glob("waniushka-netlify-rc*.zip")
+    if (match := RC_PATTERN.fullmatch(path.name))
+]
+rc = max(existing, default=0) + 1
+OUT = ROOT / f"waniushka-netlify-rc{rc}.zip"
 
 ALREADY_COMPRESSED = {".jpg", ".jpeg", ".png", ".gif", ".mp3", ".mp4", ".woff", ".woff2"}
 
@@ -32,7 +40,7 @@ if __name__ == "__main__":
 
     files = sorted(p for p in DIST.rglob("*") if p.is_file())
     raw = 0
-    with zipfile.ZipFile(OUT, "w", zipfile.ZIP_DEFLATED, compresslevel=6) as z:
+    with zipfile.ZipFile(OUT, "x", zipfile.ZIP_DEFLATED, compresslevel=6) as z:
         for p in files:
             mode = (zipfile.ZIP_STORED if p.suffix.lower() in ALREADY_COMPRESSED
                     else zipfile.ZIP_DEFLATED)

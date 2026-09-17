@@ -182,6 +182,19 @@ def selected_piece(src_name, out_name, box, max_side=240, cutoff=0.55, trim_thre
     save(alpha, ink.getbbox() or (0, 0, *alpha.size), OUT / f"{out_name}.png", max_side=max_side)
 
 
+def selected_signature(src_name, out_name, box, max_side=1200, cutoff=0.28, trim_threshold=30):
+    """Isole le nom en capitales d'une page verticale et le remet horizontalement."""
+    print(f"{src_name} → {out_name}.png")
+    # Le cadrage ne garde que « VANIA JAIKIN MIYAZAKI » et exclut les marques du papier.
+    # La rotation antihoraire remet la lecture de gauche à droite ; le seuil configurable
+    # conserve les points des i et les irrégularités utiles du feutre.
+    crop = load(SIGLES / src_name).crop(box).rotate(90, expand=True)
+    alpha = to_alpha(crop, cutoff=cutoff).filter(ImageFilter.MedianFilter(3))
+    ink = alpha.point(lambda v: 255 if v > trim_threshold else 0)
+    save(alpha, ink.getbbox() or (0, 0, *alpha.size), OUT / f"{out_name}.png",
+         max_side=max_side)
+
+
 def favicons():
     """Produit une étoile robuste aux tailles d'onglet et une icône tactile sur fond blanc."""
     src = OUT / "nav-star.png"
@@ -230,7 +243,8 @@ def aleas():
 
 
 if __name__ == "__main__":
-    whole(SIGLES / "VJM_3.jpeg", OUT / "nom-manuscrit.png")
+    selected_piece("VJM_encre.jpg", "nom-manuscrit", (40, 60, 2370, 540),
+                   max_side=1200, cutoff=0.45, trim_threshold=35)
     # Planche « pop-up », dans l'ordre de lecture : vague, 5 spirales, vague, 5 étoiles.
     pieces("sigles_pop-up.jpeg", [
         "sigle-vague-1",

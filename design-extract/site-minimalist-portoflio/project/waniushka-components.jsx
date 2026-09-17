@@ -245,9 +245,9 @@ function ThemeToggle({ theme, onToggle }) {
       aria-label={theme === 'light' ? 'Activer le thème sombre' : 'Activer le thème clair'} style={{
         background: 'none', border: 'none', cursor: 'pointer', padding: 8,
         width: 44, height: 44, display: 'flex', alignItems: 'center', justifyContent: 'center',
-        color: 'var(--fg)', opacity: hov ? 1 : 0.55, transition: 'opacity 0.3s',
+        color: 'var(--fg)', opacity: hov ? 1 : 0.85, transition: 'opacity 0.3s',
       }}>
-      <BrandIcon src={theme === 'light' ? 'assets/brand/nav-moon.png' : 'assets/brand/nav-sun.png'} size={20} />
+      <BrandIcon src={theme === 'light' ? 'assets/brand/nav-moon.svg' : 'assets/brand/nav-sun.svg'} size={27} />
     </button>
   );
 }
@@ -584,16 +584,16 @@ function BrandIcon({ src, size = 22, alt = '' }) {
     width: size, height: size, objectFit: 'contain', display: 'block', filter: 'var(--ink-invert)',
   }} />;
 }
-function IconHome({ size = 22 }) {
-  return <BrandIcon src="assets/brand/nav-home.png" size={size} />;
+function IconHome({ size = 29 }) {
+  return <BrandIcon src="assets/brand/nav-home.svg" size={size} />;
 }
-function IconMountain({ size = 24 }) {
-  return <BrandIcon src="assets/brand/nav-mountains.png" size={size} />;
+function IconMountain({ size = 36 }) {
+  return <BrandIcon src="assets/brand/nav-mountains.svg" size={size} />;
 }
-function IconStar({ size = 20 }) {
-  return <BrandIcon src="assets/brand/nav-star.png" size={size} />;
+function IconStar({ size = 27 }) {
+  return <BrandIcon src="assets/brand/nav-star.svg" size={size} />;
 }
-function IconMenu({ size = 24, open = false }) {
+function IconMenu({ size = 29, open = false }) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" style={{ transition: 'transform 0.3s ease' }}>
       {open ? (
@@ -672,7 +672,7 @@ function IconButton({ children, onClick, title, active }) {
       style={{
         background: 'none', border: 'none', cursor: 'pointer', padding: 6, lineHeight: 0,
         minWidth: 44, minHeight: 44,
-        color: 'var(--fg)', opacity: active || hov ? 1 : 0.55, transition: 'opacity 0.25s',
+        color: 'var(--fg)', opacity: active || hov ? 1 : 0.85, transition: 'opacity 0.25s',
         display: 'flex', alignItems: 'center', justifyContent: 'center',
       }}>{children}</button>
   );
