@@ -4,7 +4,7 @@ const {
   HOME_PHOTOS, KINEMATIK, ALBUMS, CARNETS, CARNETS_ALL, ALEAS, BIO, LECTURE, activeNews,
   ThemeToggle, PageTransition, Page, MasonryGrid, AudioPlayer, MediaOverlay, Popup,
   IconHome, IconMountain, IconStar, IconMenu, IconButton, BrandIcon,
-  SOCIAL_ICONS, SpotifyEmbed, Blocks, Html, SketchFrame,
+  SOCIAL_ICONS, PlaylistEmbed, Blocks, Html, SketchFrame,
   useMediaQuery, seededRandom,
 } = window;
 
@@ -534,6 +534,13 @@ function KinematikPage({ onOpenMedia, onBack }) {
 
 function KinTile({ v, index, isMob, onClick }) {
   const [hov, setHov] = useState(false);
+  /* `information` : derrière un petit « i » en haut à droite. Survol (souris) ou focus du
+     « i » → le voile montre l'information à la place du titre ; un clic/tap l'épingle sans
+     ouvrir la vidéo. Le survol ne compte qu'à la souris : au tactile, le navigateur simule
+     un survol qui ne se relâche jamais et le second tap ne refermerait rien. */
+  const [infoHov, setInfoHov] = useState(false);
+  const [infoPinned, setInfoPinned] = useState(false);
+  const showInfo = Boolean(v.information) && (infoHov || infoPinned);
   /* Mobile : deux colonnes bien rangées, tout en 16/9. Le désordre sur un écran de téléphone
      tourne au chaos illisible. */
   const tf = useMemo(() => {
@@ -554,7 +561,11 @@ function KinTile({ v, index, isMob, onClick }) {
   }, [index, isMob]);
 
   return (
-    <div onClick={onClick} onMouseEnter={() => setHov(true)} onMouseLeave={() => setHov(false)}
+    <div onClick={onClick} onMouseEnter={() => setHov(true)}
+      onMouseLeave={() => setHov(false)}
+      /* au tactile, le navigateur émet un mouseleave juste après le tap : seule une vraie
+         sortie de souris referme l'information épinglée */
+      onPointerLeave={(e) => { if (e.pointerType === 'mouse') setInfoPinned(false); }}
       style={{
         breakInside: 'avoid', width: tf.w, marginLeft: `${tf.shift}%`,
         marginBottom: isMob ? 16 : 48,
@@ -584,9 +595,15 @@ function KinTile({ v, index, isMob, onClick }) {
           position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column',
           alignItems: 'center', justifyContent: 'center', textAlign: 'center', padding: 14,
           background: 'var(--bg)', color: 'var(--fg)',
-          opacity: hov ? 1 : 0, transition: 'opacity 0.3s',
+          opacity: hov || showInfo ? 1 : 0, transition: 'opacity 0.3s',
           fontFamily: 'var(--font-body)',
         }}>
+          {showInfo ? (
+            <span className="vjm-scroll" style={{
+              maxHeight: '100%', overflowY: 'auto', padding: '0 18px',
+              fontSize: isMob ? 11 : 'clamp(12px, 1.1vw, 14px)', lineHeight: 1.5, whiteSpace: 'pre-line',
+            }}>{v.information}</span>
+          ) : (<React.Fragment>
           <span style={{ fontSize: 'clamp(15px, 1.5vw, 19px)', fontFamily: 'var(--font-heading)', lineHeight: 1.3 }}>{v.titre}</span>
           {v.sousTitre && (
             <span style={{ fontSize: 'clamp(14px, 1.4vw, 18px)', fontFamily: 'var(--font-heading)', lineHeight: 1.3, opacity: 0.75 }}>{v.sousTitre}</span>
@@ -595,7 +612,24 @@ function KinTile({ v, index, isMob, onClick }) {
           <span style={{ fontFamily: 'var(--font-digital)', fontSize: 12, color: 'var(--fg-muted)', marginTop: 10 }}>
             {v.trailer && 'Trailer · '}{v.duree} · {v.annee}
           </span>
+          </React.Fragment>)}
         </div>
+        {v.information && (
+          <button type="button" aria-label={`Information — ${v.titre}`} aria-expanded={showInfo}
+            onClick={(e) => { e.stopPropagation(); setInfoPinned((p) => !p); }}
+            onPointerEnter={(e) => { if (e.pointerType === 'mouse') setInfoHov(true); }}
+            onPointerLeave={(e) => { if (e.pointerType === 'mouse') setInfoHov(false); }}
+            onFocus={(e) => { if (e.currentTarget.matches(':focus-visible')) setInfoHov(true); }} onBlur={() => { setInfoHov(false); setInfoPinned(false); }}
+            style={{
+              position: 'absolute', top: 6, right: 6, width: 30, height: 30, padding: 5,
+              borderRadius: '50%', border: 'none', cursor: 'help', background: 'var(--bg)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              opacity: showInfo ? 1 : 0.85, transition: 'opacity 0.2s',
+            }}>
+            <img src={`assets/brand/info-album-${(index % 3) + 1}.svg`} alt="" aria-hidden="true"
+              style={{ width: 18, height: 18, objectFit: 'contain', display: 'block', filter: 'var(--ink-invert)' }} />
+          </button>
+        )}
       </div>
     </div>
   );
@@ -627,7 +661,7 @@ function FilmsPage({ onOpenAlbum, onInfo, onBack }) {
               onMouseEnter={(e) => { e.currentTarget.style.opacity = 1; }}
               onMouseLeave={(e) => { e.currentTarget.style.opacity = 0.9; }}
             >{a.titre}</button>
-            <button onClick={() => onInfo(a.id)} aria-label={`Infos — ${a.titre}`} title="Infos" style={{
+            {a.resume && <button onClick={() => onInfo(a.id)} aria-label={`Infos — ${a.titre}`} title="Infos" style={{
               background: 'none', border: 'none', color: 'var(--fg-muted)',
               width: 44, height: 44, cursor: 'pointer', flexShrink: 0,
               display: 'flex', alignItems: 'center', justifyContent: 'center',
@@ -635,7 +669,7 @@ function FilmsPage({ onOpenAlbum, onInfo, onBack }) {
             }}
               onMouseEnter={(e) => { e.currentTarget.style.opacity = 1; }}
               onMouseLeave={(e) => { e.currentTarget.style.opacity = 0.62; }}
-            ><AlbumInfoIcon albumId={a.id} size={28} /></button>
+            ><AlbumInfoIcon albumId={a.id} size={28} /></button>}
           </div>
         ))}
       </div>
@@ -644,23 +678,76 @@ function FilmsPage({ onOpenAlbum, onInfo, onBack }) {
 }
 
 /* ═══════════════════ ALBUM (player) ═══════════════════ */
+const PLATFORM_LABELS = {
+  spotify: 'Spotify', 'apple-music': 'Apple Music', 'apple-podcasts': 'Apple Podcasts',
+  deezer: 'Deezer', youtube: 'YouTube', soundcloud: 'SoundCloud', bandcamp: 'Bandcamp',
+  'amazon-music': 'Amazon Music',
+};
+const platformLabel = (p) => p.libelle || PLATFORM_LABELS[p.plateforme] || p.plateforme || 'Écouter';
+
+const tabStyle = (active) => ({
+  background: 'none', border: 'none', cursor: 'pointer', padding: '6px 2px',
+  fontFamily: 'var(--font-digital)', fontSize: 12, letterSpacing: '0.1em',
+  color: active ? 'var(--fg)' : 'var(--fg-muted)',
+  textDecoration: active ? 'underline' : 'none', textUnderlineOffset: '0.35em',
+});
+
+/* Playlists d'un album : une par plateforme et par langue. Un seul lecteur à la fois —
+   la langue choisie (celle de la bio si elle existe ici), puis la plateforme. Les
+   plateformes sans lecteur intégré (Bandcamp, Amazon…) restent des liens. */
+function Playlists({ playlists, title }) {
+  const langs = useMemo(() => [...new Set(playlists.map((p) => p.langue || 'fr'))], [playlists]);
+  const [lang, setLang] = useState(() => (langs.includes(readLang()) ? readLang() : langs[0]));
+  const inLang = playlists.filter((p) => (p.langue || 'fr') === lang);
+  const players = inLang.filter((p) => p.embed);
+  const links = inLang.filter((p) => !p.embed);
+  const [tab, setTab] = useState(0);
+  const current = players[Math.min(tab, players.length - 1)];
+  const changeLang = (l) => { setLang(l); setTab(0); };
+  return (
+    <div style={{ marginTop: 'var(--block-gap)' }}>
+      {langs.length > 1 && <LangSwitch lang={lang} onChange={changeLang} langs={langs} label="Langue de la playlist" />}
+      {players.length > 1 && (
+        <div role="tablist" aria-label="Plateforme" style={{ display: 'flex', flexWrap: 'wrap', gap: '4px 18px', marginBottom: 14 }}>
+          {players.map((p, i) => (
+            <button key={p.plateforme + i} role="tab" aria-selected={p === current}
+              onClick={() => setTab(i)} style={tabStyle(p === current)}>{platformLabel(p)}</button>
+          ))}
+        </div>
+      )}
+      {current && <PlaylistEmbed key={current.embed} playlist={current} title={`${title} — ${platformLabel(current)}`} />}
+      {links.length > 0 && (
+        <p style={{ display: 'flex', flexWrap: 'wrap', gap: '6px 20px', marginTop: 16, fontFamily: 'var(--font-body)', fontSize: 15 }}>
+          {links.map((p, i) => (
+            <a key={p.url + i} href={p.url} target="_blank" rel="noopener noreferrer"
+              style={{ color: 'var(--fg-muted)', textUnderlineOffset: '0.2em' }}>{platformLabel(p)} ↗</a>
+          ))}
+        </p>
+      )}
+    </div>
+  );
+}
+
 function AlbumPage({ album, onBack, onInfo }) {
   return (
     <Page>
       <BackLink label="Films pour les oreilles" onClick={onBack} />
       <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 'var(--block-gap)' }}>
         <h1 style={{ fontFamily: 'var(--font-heading)', fontSize: 'clamp(1.25rem, 2.2vw, 1.7rem)', lineHeight: 1.2 }}>{album.titre}</h1>
-        <button onClick={() => onInfo(album.id)} aria-label={`Infos — ${album.titre}`} title="Infos" style={{
+        {album.resume && <button onClick={() => onInfo(album.id)} aria-label={`Infos — ${album.titre}`} title="Infos" style={{
           background: 'none', border: 'none', color: 'var(--fg-muted)',
           width: 40, height: 40, cursor: 'pointer', flexShrink: 0,
           display: 'flex', alignItems: 'center', justifyContent: 'center', opacity: 0.68,
-        }}><AlbumInfoIcon albumId={album.id} size={25} /></button>
+        }}><AlbumInfoIcon albumId={album.id} size={25} /></button>}
       </div>
-      {/* Les albums masterisés ont leur player maison ; « L'apparition des coquillages »
-          n'existe que sur Spotify et s'y écoute directement. */}
-      {album.episodes
-        ? <AudioPlayer tracks={album.episodes} />
-        : <SpotifyEmbed src={album.spotify} title={album.titre} />}
+      {/* Les albums masterisés ont leur player maison ; les playlists des plateformes
+          s'écoutent dans leur lecteur, sous le player s'il y en a un. */}
+      {album.episodes && <AudioPlayer tracks={album.episodes} />}
+      {album.playlists?.length > 0 && <Playlists playlists={album.playlists} title={album.titre} />}
+      {album.contenuHtml && (
+        <Html html={album.contenuHtml} className="vjm-prose"
+          style={{ marginTop: 'var(--block-gap)', maxWidth: 720, fontSize: 'clamp(1.02rem, 1.35vw, 1.15rem)' }} />
+      )}
     </Page>
   );
 }
@@ -841,12 +928,11 @@ const DrawCanvas = React.forwardRef(function DrawCanvas({ theme }, apiRef) {
 
 /* ═══════════════════ COIN LECTURE ═══════════════════ */
 /* Collage de vignettes « de traviole », comme les carnets : largeur, décalage et rotation
-   tirés de `seededRandom`. Chaque vignette montre au choix un titre, un extrait ou une image
-   (content/lecture/*.json → `vignette.type`). Les vignettes de texte ont un cadre dessiné. */
+   tirés de `seededRandom`. Chaque vignette montre au choix le titre ou un extrait de
+   300 caractères au plus (content/lecture/*.json → `vignette.type`), dans un cadre dessiné. */
 function ReadingTile({ t, index, isMob, onOpen }) {
   const [hov, setHov] = useState(false);
   const v = t.vignette || { type: 'titre' };
-  const type = v.type === 'image' && !v.image ? 'titre' : v.type;
   const tf = useMemo(() => {
     const w = isMob ? 92 + seededRandom(index + 300) * 8 : 72 + seededRandom(index + 300) * 28;
     return {
@@ -875,25 +961,18 @@ function ReadingTile({ t, index, isMob, onOpen }) {
         textAlign: 'left', cursor: 'pointer', position: 'relative',
         transform: hov ? `${tf.base} scale(1.025)` : tf.base, transition: 'transform 0.3s ease',
       }}>
-      {type === 'image' ? (
-        <React.Fragment>
-          <img src={v.image} alt="" loading="lazy" style={{ width: '100%', height: 'auto', display: 'block' }} />
-          <span style={{ display: 'block', marginTop: 12 }}>{title(`${(1.05 * tf.scale).toFixed(2)}rem`)}</span>
-        </React.Fragment>
-      ) : (
-        <span style={{ display: 'block', position: 'relative', padding: 'clamp(22px, 2.6vw, 34px)' }}>
-          <SketchFrame seed={index + 11} strokeWidth={1.1} />
-          {type === 'extrait' && v.extrait ? (
-            <React.Fragment>
-              <span style={{
-                display: 'block', fontFamily: 'var(--font-body)', fontStyle: 'italic',
-                fontSize: `${(1.08 * tf.scale).toFixed(2)}rem`, lineHeight: 1.55, marginBottom: 18,
-              }}>« {v.extrait} »</span>
-              {title('0.98rem')}
-            </React.Fragment>
-          ) : title(`${(1.5 * tf.scale).toFixed(2)}rem`)}
-        </span>
-      )}
+      <span style={{ display: 'block', position: 'relative', padding: 'clamp(22px, 2.6vw, 34px)' }}>
+        <SketchFrame seed={index + 11} strokeWidth={1.1} />
+        {v.type === 'extrait' && v.extrait ? (
+          <React.Fragment>
+            <span style={{
+              display: 'block', fontFamily: 'var(--font-body)', fontStyle: 'italic',
+              fontSize: `${(1.08 * tf.scale).toFixed(2)}rem`, lineHeight: 1.55, marginBottom: 18,
+            }}>« {v.extrait} »</span>
+            {title('0.98rem')}
+          </React.Fragment>
+        ) : title(`${(1.5 * tf.scale).toFixed(2)}rem`)}
+      </span>
     </button>
   );
 }
@@ -913,7 +992,7 @@ function ReadingPage({ onBack, onOpenText }) {
   );
 }
 
-/* Un texte en plein cadre : colonne de lecture, blocs (texte, images, vidéos, sons),
+/* Un texte en plein cadre : colonne de lecture, texte riche (images, vidéos rendues au build),
    notes de bas de page avec aller-retour, et le contexte (date, lieu, source) en haut ou
    en bas selon le fichier. Les ancres des notes défilent sans toucher à l'URL : le site
    n'a pas de routeur, un `#note-1` n'y signifierait rien au rechargement. */
@@ -941,7 +1020,7 @@ function ReadingText({ text, onBack }) {
           )}
           <h1 style={{ fontFamily: 'var(--font-heading)', fontWeight: 400, fontSize: 'clamp(1.8rem, 3.6vw, 2.6rem)', lineHeight: 1.15 }}>{text.titre}</h1>
         </header>
-        <Blocks blocks={text.blocks} />
+        <Html html={text.corpsHtml} className="vjm-prose" />
         {text.notes && text.notes.length > 0 && (
           <ol className="vjm-notes vjm-prose" aria-label="Notes">
             {text.notes.map((n, i) => (
@@ -1072,7 +1151,9 @@ function writeLang(lang) {
   try { window.localStorage.setItem(LANG_KEY, lang); } catch { /* stockage indisponible */ }
 }
 
-function LangSwitch({ lang, onChange }) {
+const LANG_LABELS = { fr: 'FR', en: 'EN', es: 'ES', de: 'DE', it: 'IT', pt: 'PT' };
+
+function LangSwitch({ lang, onChange, langs = ['fr', 'en'], label = 'Langue de la bio' }) {
   const opt = (code, label) => (
     <button onClick={() => onChange(code)} aria-pressed={lang === code} lang={code} style={{
       background: 'none', border: 'none', cursor: 'pointer', padding: '6px 4px',
@@ -1082,10 +1163,13 @@ function LangSwitch({ lang, onChange }) {
     }}>{label}</button>
   );
   return (
-    <div role="group" aria-label="Langue de la bio" style={{ display: 'flex', alignItems: 'center', gap: 4, marginBottom: 22 }}>
-      {opt('fr', 'FR')}
-      <span aria-hidden="true" style={{ color: 'var(--fg-subtle)' }}>·</span>
-      {opt('en', 'EN')}
+    <div role="group" aria-label={label} style={{ display: 'flex', alignItems: 'center', gap: 4, marginBottom: 22 }}>
+      {langs.map((code, i) => (
+        <React.Fragment key={code}>
+          {i > 0 && <span aria-hidden="true" style={{ color: 'var(--fg-subtle)' }}>·</span>}
+          {opt(code, LANG_LABELS[code] || code.toUpperCase())}
+        </React.Fragment>
+      ))}
     </div>
   );
 }
@@ -1225,9 +1309,7 @@ function App() {
       {infoAlbumObj && (
         <Popup sketch seed={ALBUMS.indexOf(infoAlbumObj) + 2} onClose={closeInfo} label={infoAlbumObj.titre}>
           <p style={{ fontFamily: 'var(--font-heading)', fontSize: 'clamp(1.25rem, 2.6vw, 1.7rem)', marginBottom: 22, paddingRight: 28 }}>{infoAlbumObj.titre}</p>
-          <div style={{ fontSize: 17, opacity: 0.92 }}>
-            <Blocks blocks={infoAlbumObj.infos} />
-          </div>
+          <p style={{ fontFamily: 'var(--font-body)', fontSize: 17, lineHeight: 1.7, opacity: 0.92 }}>{infoAlbumObj.resume}</p>
         </Popup>
       )}
 

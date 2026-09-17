@@ -7,6 +7,7 @@
 | Itération 1 — prototype d'exploration (variantes/tweaks) | DONE (archivé) | — |
 | Itération 2 → 4 — maquette MVP fidèle aux wireframes | DONE | docs/features/maquette-iteration-2.md |
 | Itération 5 — contenu éditable + Coin lecture + news + bio FR/EN | DONE (CMS à activer) | docs/features/iteration-5-contenu-editable.md |
+| Itération 6 — schémas CMS figés (playlists, textes riches, vignettes, « i » Kinematik) | DONE | docs/features/iteration-6-schemas-cms.md |
 | Site propre v1 (reconstruction depuis zéro après validation maquette) | TODO | — |
 
 ## Cadre itération 2

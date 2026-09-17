@@ -186,9 +186,9 @@ test('the build turns content/ into window.CONTENT with rendered Markdown and fo
   assert.ok(data.kinematik.length >= 12);
   assert.ok(data.lecture.some((t) => t.id === 'ma-mere'));
   const text = data.lecture.find((t) => t.id === 'ma-mere');
-  assert.match(text.blocks[0].html, /<p>/);
-  assert.ok(text.blocks.some((b) => b.type === 'image'));
-  assert.match(text.blocks.find((b) => b.html?.includes('fn-ref')).html, /<a href="#note-1" id="ref-1"/);
+  assert.match(text.corpsHtml, /<p>/);
+  assert.match(text.corpsHtml, /<figure><img src="assets\/home\/024-oiseau-de-feu\.jpg" alt="Oiseau de feu" loading="lazy">/);
+  assert.match(text.corpsHtml, /<a href="#note-1" id="ref-1"/);
   assert.match(text.notes[0].html, /Volodia/);
   assert.match(renderMarkdown('[x](https://a.ch)'), /target="_blank" rel="noopener noreferrer"/);
   assert.match(renderMarkdown('« oui » ?'), /« oui » \?/);
@@ -273,4 +273,76 @@ test('the static page is findable by name', () => {
   assert.match(source, /<h1>Vania Jaikin Miyazaki<\/h1>/);
   assert.match(read('public/robots.txt'), /Sitemap: https:\/\/vjmvjmvjm\.com\/sitemap\.xml/);
   assert.match(read('public/sitemap.xml'), /<loc>https:\/\/vjmvjmvjm\.com\/<\/loc>/);
+});
+
+test('rich text turns a lone video URL into a player and a lone image into a figure', async () => {
+  const { renderMarkdown, videoEmbed } = await import('../tools/build-content.mjs');
+  assert.equal(videoEmbed('https://vimeo.com/298725112/5a560bc308'), 'https://player.vimeo.com/video/298725112?h=5a560bc308');
+  assert.equal(videoEmbed('https://youtu.be/abc123'), 'https://www.youtube-nocookie.com/embed/abc123');
+  assert.equal(videoEmbed('https://example.com/x'), null);
+  const out = renderMarkdown('Avant\n\nhttps://www.youtube.com/watch?v=abc123&t=3\n\n![Oiseau](a.jpg "Légende")');
+  assert.match(out, /<figure class="vjm-video"><iframe src="https:\/\/www\.youtube-nocookie\.com\/embed\/abc123"/);
+  assert.match(out, /<figure><img src="a\.jpg" alt="Oiseau" loading="lazy"><figcaption>Légende<\/figcaption><\/figure>/);
+  // un lien dans une phrase reste un lien
+  assert.match(renderMarkdown('Voir https://vimeo.com/1 ici'), /<a href="https:\/\/vimeo\.com\/1"/);
+});
+
+test('playlist URLs become embedded players when the platform allows it', async () => {
+  const { playlistEmbed } = await import('../tools/build-content.mjs');
+  const e = (plateforme, url) => playlistEmbed({ plateforme, url })?.embed ?? null;
+  assert.equal(e('spotify', 'https://open.spotify.com/show/4qmj0UuzPkLPpDFqxgd2MY'),
+    'https://open.spotify.com/embed/show/4qmj0UuzPkLPpDFqxgd2MY?utm_source=generator&theme=0');
+  assert.equal(e('spotify', 'https://open.spotify.com/embed/playlist/abc'),
+    'https://open.spotify.com/embed/playlist/abc?utm_source=generator&theme=0');
+  assert.equal(e('apple-music', 'https://music.apple.com/fr/playlist/x/pl.123'), 'https://embed.music.apple.com/fr/playlist/x/pl.123');
+  assert.equal(e('apple-podcasts', 'https://podcasts.apple.com/fr/podcast/x/id1'), 'https://embed.podcasts.apple.com/fr/podcast/x/id1');
+  assert.equal(e('deezer', 'https://www.deezer.com/fr/playlist/908622995'), 'https://widget.deezer.com/widget/auto/playlist/908622995');
+  assert.equal(e('youtube', 'https://www.youtube.com/playlist?list=PLx'), 'https://www.youtube-nocookie.com/embed/videoseries?list=PLx');
+  assert.match(e('soundcloud', 'https://soundcloud.com/a/sets/b'), /^https:\/\/w\.soundcloud\.com\/player\/\?url=https%3A%2F%2Fsoundcloud\.com%2Fa%2Fsets%2Fb/);
+  assert.equal(e('bandcamp', 'https://x.bandcamp.com/album/y'), null);
+  assert.equal(e('spotify', 'pas une url'), null);
+});
+
+test('albums carry a short summary, playlists and a rich page text', async () => {
+  const { loadContent } = await import('../tools/build-content.mjs');
+  const data = loadContent(new URL('../content', import.meta.url).pathname.replace(/^\/(\w:)/, '$1'));
+  for (const album of data.albums) {
+    assert.ok(!('infos' in album) && !('spotify' in album), `${album.id} garde l'ancien schéma`);
+    assert.ok((album.resume || '').length <= 300, `${album.id} : résumé trop long`);
+    assert.ok(Array.isArray(album.playlists));
+  }
+  const coquillages = data.albums.find((a) => a.id === 'coquillages');
+  assert.equal(coquillages.playlists[0].plateforme, 'spotify');
+  assert.match(coquillages.playlists[0].embed, /open\.spotify\.com\/embed\/show\//);
+  assert.match(app(), /function Playlists\(/);
+  assert.match(app(), /a\.resume && <button/);
+  assert.match(app(), /\{infoAlbumObj\.resume\}/);
+});
+
+test('the CMS schema bounds short texts and drops image thumbnails for reading', () => {
+  const config = read('admin/config.yml');
+  for (const name of ['resume', 'extrait', 'information']) {
+    assert.match(config, new RegExp(`name: ${name},[^\n]*maxlength: 300`), `${name} limité à 300`);
+  }
+  assert.match(config, /name: corps\s+label: Texte\s+widget: markdown/);
+  assert.match(config, /name: contenu\s+label: "Texte de la page"\s+widget: markdown/);
+  assert.match(config, /name: playlists[\s\S]*name: plateforme[\s\S]*name: langue[\s\S]*name: url/);
+  assert.doesNotMatch(config, /name: image, label: Image, widget: image, required: false/);
+  assert.doesNotMatch(app(), /v\.type === 'image'/);
+  const text = content('lecture/ma-mere.json');
+  assert.ok(!('blocks' in text) && typeof text.corps === 'string');
+  assert.ok(!('image' in text.vignette));
+});
+
+test('Kinematik tiles show an optional information behind a small i', () => {
+  const source = app();
+  assert.match(source, /\{v\.information && \(\s*<button/);
+  assert.match(source, /e\.stopPropagation\(\); setInfoPinned/);
+  assert.match(source, /e\.pointerType === 'mouse'/);
+  assert.ok(content('kinematik.json').films.every((f) => typeof f.information === 'string'));
+});
+
+test('footnotes are set a step smaller than the text', () => {
+  assert.match(html(), /\.vjm-notes \{[^}]*font-size: 0\.72em/);
+  assert.match(html(), /\.fn-ref \{ font-size: 0\.6em/);
 });

@@ -1,6 +1,7 @@
 # Sveltia CMS — schémas du contenu de vjmvjmvjm.com
 # Chaque collection correspond à un fichier (ou un dossier) de `content/`.
-# Le build (tools/build-content.mjs) rend le Markdown : toute propriété `md` devient du HTML.
+# Le build (tools/build-content.mjs) rend le Markdown : toute propriété `md`, `corps` ou
+# `contenu` devient du HTML, et les URL de playlist deviennent des lecteurs intégrés.
 
 # TODO activation : créer le repo GitHub, brancher Netlify sur ce repo (build = npm run build),
 # puis remplacer OWNER. D'ici là, Sveltia permet déjà d'éditer en local depuis Chrome
@@ -10,7 +11,6 @@ backend:
   repo: OWNER/wania
   branch: main
 
-locale: fr
 media_folder: assets/uploads
 public_folder: assets/uploads
 
@@ -37,50 +37,13 @@ collections:
         label: Vignette du collage
         widget: object
         fields:
-          - { name: type, label: "Afficher", widget: select, options: [titre, extrait, image], default: titre }
-          - { name: extrait, label: Extrait, widget: text, required: false }
-          - { name: image, label: Image, widget: image, required: false }
-      # Définition des blocs partagés (texte, image, vidéo, audio, lien), réutilisée plus bas
-      # par les infos d'album, les news, la bio et les résumés Kinematik.
-      - &blocks
-        name: blocks
-        label: Contenu
-        label_singular: bloc
-        widget: list
-        typeKey: type
-        types:
-          - name: text
-            label: Texte
-            widget: object
-            fields:
-              - { name: md, label: "Texte (Markdown, [^1] = appel de note)", widget: markdown }
-              - { name: variante, label: "Variante", widget: select, options: ["", "liste"], required: false }
-          - name: image
-            label: Image
-            widget: object
-            fields:
-              - { name: src, label: Image, widget: image }
-              - { name: alt, label: "Description (accessibilité)", widget: string, required: false }
-              - { name: legende, label: Légende, widget: string, required: false }
-          - name: video
-            label: Vidéo
-            widget: object
-            fields:
-              - { name: vimeoId, label: "Identifiant Vimeo", widget: string, required: false }
-              - { name: url, label: "…ou fichier / URL vidéo", widget: file, required: false }
-              - { name: legende, label: Légende, widget: string, required: false }
-          - name: audio
-            label: Audio
-            widget: object
-            fields:
-              - { name: src, label: "Fichier audio", widget: file }
-              - { name: titre, label: Titre, widget: string, required: false }
-          - name: lien
-            label: Lien
-            widget: object
-            fields:
-              - { name: label, label: Texte, widget: string }
-              - { name: url, label: URL, widget: string }
+          - { name: type, label: Afficher, widget: select, options: [{ label: "Le titre", value: titre }, { label: "Un extrait", value: extrait }], default: titre }
+          - { name: extrait, label: "Extrait (300 caractères max)", widget: text, required: false, maxlength: 300 }
+      - name: corps
+        label: Texte
+        widget: markdown
+        modes: [rich_text, raw]
+        hint: "[^1] = appel de la 1re note. Pour une vidéo, coller l'adresse Vimeo ou YouTube seule sur sa ligne."
       - name: notes
         label: Notes de bas de page
         label_singular: note
@@ -127,7 +90,48 @@ collections:
               - { name: fin, label: "Jusqu'au (inclus)", widget: datetime, time_format: false, date_format: "YYYY-MM-DD", format: "YYYY-MM-DD" }
               - { name: mode, label: "Au clic", widget: select, options: [{ label: "Pop-up", value: popup }, { label: "Lien externe", value: lien }], default: popup }
               - { name: url, label: "URL (mode lien)", widget: string, required: false }
-              - { <<: *blocks, name: blocks, label: "Contenu (mode pop-up)", required: false }
+              # Définition des blocs partagés (texte, image, vidéo, audio, lien), réutilisée
+              # plus bas par la bio et les résumés Kinematik.
+              - &blocks
+                name: blocks
+                label: "Contenu (mode pop-up)"
+                label_singular: bloc
+                widget: list
+                required: false
+                typeKey: type
+                types:
+                  - name: text
+                    label: Texte
+                    widget: object
+                    fields:
+                      - { name: md, label: "Texte (Markdown)", widget: markdown }
+                      - { name: variante, label: Variante, widget: select, options: ["", "liste"], required: false }
+                  - name: image
+                    label: Image
+                    widget: object
+                    fields:
+                      - { name: src, label: Image, widget: image }
+                      - { name: alt, label: "Description (accessibilité)", widget: string, required: false }
+                      - { name: legende, label: Légende, widget: string, required: false }
+                  - name: video
+                    label: Vidéo
+                    widget: object
+                    fields:
+                      - { name: vimeoId, label: "Identifiant Vimeo", widget: string, required: false }
+                      - { name: url, label: "…ou fichier / URL vidéo", widget: file, required: false }
+                      - { name: legende, label: Légende, widget: string, required: false }
+                  - name: audio
+                    label: Audio
+                    widget: object
+                    fields:
+                      - { name: src, label: "Fichier audio", widget: file }
+                      - { name: titre, label: Titre, widget: string, required: false }
+                  - name: lien
+                    label: Lien
+                    widget: object
+                    fields:
+                      - { name: label, label: Texte, widget: string }
+                      - { name: url, label: URL, widget: string }
 
       - name: bio
         label: Bio
@@ -138,15 +142,15 @@ collections:
             label: Français
             widget: object
             fields:
-              - { <<: *blocks, name: pro, label: "Bio (page)" }
-              - { <<: *blocks, name: perso, label: "Texte derrière l'œil" }
+              - { <<: *blocks, name: pro, label: "Bio (page)", required: true }
+              - { <<: *blocks, name: perso, label: "Texte derrière l'œil", required: true }
           - name: en
             label: English
             widget: object
             fields:
               - { name: aValider, label: "Traduction à valider", widget: boolean, default: false }
-              - { <<: *blocks, name: pro, label: "Bio (page)" }
-              - { <<: *blocks, name: perso, label: "Texte derrière l'œil" }
+              - { <<: *blocks, name: pro, label: "Bio (page)", required: true }
+              - { <<: *blocks, name: perso, label: "Texte derrière l'œil", required: true }
 
       - name: kinematik
         label: Kinematik
@@ -168,7 +172,8 @@ collections:
               - { name: hash, label: "Hash Vimeo (vidéo privée)", widget: string, required: false }
               - { name: trailer, label: Trailer, widget: boolean, default: false }
               - { name: mention, label: "Mention exceptionnelle sur la vignette", widget: string, required: false }
-              - { <<: *blocks, name: resume, label: "Résumé (derrière le « i »)", required: false }
+              - { name: information, label: "Information (le « i » de la vignette, 300 caractères max)", widget: text, required: false, maxlength: 300 }
+              - { <<: *blocks, name: resume, label: "Résumé (derrière le « i » de la lecture vidéo)" }
               - name: generique
                 label: Générique
                 widget: list
@@ -190,10 +195,49 @@ collections:
             fields:
               - { name: id, label: Identifiant, widget: string }
               - { name: titre, label: Titre, widget: string }
-              - { <<: *blocks, name: infos, label: "Infos (derrière le « i »)" }
-              - { name: spotify, label: "Lecteur Spotify (si pas d'épisodes)", widget: string, required: false }
+              - { name: resume, label: "Résumé (derrière le « i », 300 caractères max)", widget: text, required: false, maxlength: 300 }
+              - name: playlists
+                label: Playlists
+                label_singular: playlist
+                widget: list
+                required: false
+                summary: "{{plateforme}} · {{langue}}"
+                hint: "Spotify, Apple, Deezer, YouTube et SoundCloud s'affichent en lecteur ; les autres en lien."
+                fields:
+                  - name: plateforme
+                    label: Plateforme
+                    widget: select
+                    options:
+                      - { label: Spotify, value: spotify }
+                      - { label: Apple Music, value: apple-music }
+                      - { label: Apple Podcasts, value: apple-podcasts }
+                      - { label: Deezer, value: deezer }
+                      - { label: YouTube, value: youtube }
+                      - { label: SoundCloud, value: soundcloud }
+                      - { label: Bandcamp, value: bandcamp }
+                      - { label: Amazon Music, value: amazon-music }
+                      - { label: Autre, value: autre }
+                  - { name: libelle, label: "Nom de la plateforme (si « Autre »)", widget: string, required: false }
+                  - name: langue
+                    label: Langue
+                    widget: select
+                    default: fr
+                    options:
+                      - { label: Français, value: fr }
+                      - { label: English, value: en }
+                      - { label: Español, value: es }
+                      - { label: Deutsch, value: de }
+                      - { label: Italiano, value: it }
+                      - { label: Português, value: pt }
+                  - { name: url, label: "URL de la playlist", widget: string }
+              - name: contenu
+                label: "Texte de la page"
+                widget: markdown
+                required: false
+                modes: [rich_text, raw]
+                hint: "Pour une vidéo, coller l'adresse Vimeo ou YouTube seule sur sa ligne."
               - name: episodes
-                label: Épisodes
+                label: Épisodes (lecteur du site)
                 widget: list
                 required: false
                 fields:

@@ -43,8 +43,9 @@ const CONTENT = window.CONTENT;
    Les vignettes sont dans `assets/kinematik/{id}.jpg` (tools/fetch-thumbs.py). */
 const KINEMATIK = CONTENT.kinematik;
 
-/* Films pour les oreilles. `infos` = blocs (texte, images, vidéos) de la pop-up du « i ».
-   Un album sans épisodes mais avec un `spotify` s'affiche en lecteur Spotify intégré. */
+/* Films pour les oreilles. `resume` (300 caractères) = la pop-up du « i ». `playlists` =
+   une URL par plateforme et par langue, avec son lecteur calculé au build. `contenuHtml` =
+   le texte riche de la page. `episodes` = les masters joués par le lecteur du site. */
 const ALBUMS = CONTENT.albums.map((a) => ({ ...a, episodes: a.episodes?.length ? a.episodes : null }));
 
 /* Carnets de voyage : les 53 pages scannées, titrées par leur nom de fichier. */
@@ -659,17 +660,19 @@ function Popup({ children, onClose, backdrop = 'rgba(0,0,0,0.55)', maxWidth, pad
   );
 }
 
-/* ── SpotifyEmbed ──
-   Pour « L'apparition des coquillages » : les 100 épisodes n'existent que sur Spotify, aucun
-   master n'a été livré. Plutôt qu'un player local qui n'aurait rien à jouer, on intègre le
-   lecteur du podcast. `theme=0` suit le thème du navigateur ; le cadre reste sans bordure
-   pour ne pas jurer avec le reste de la page. */
-function SpotifyEmbed({ src, title }) {
+/* ── PlaylistEmbed ──
+   Lecteur intégré d'une playlist (Spotify, Apple, Deezer, YouTube, SoundCloud). L'URL du
+   lecteur et sa hauteur sont calculées au build (tools/build-content.mjs → `embed`,
+   `hauteur`) ; YouTube n'a pas de hauteur fixe et prend le format 16/9. Le cadre reste sans
+   bordure pour ne pas jurer avec le reste de la page. Spotify dessine 352 px pour un podcast :
+   plus haut, l'iframe laissait une bande vide sous la carte. */
+function PlaylistEmbed({ playlist, title }) {
   return (
-    <iframe src={`${src}?utm_source=generator&theme=0`} title={title} loading="lazy"
-      /* 352 px : la hauteur que le lecteur Spotify dessine réellement pour un podcast.
-         Plus haut, l'iframe laisse une bande vide sous la carte. */
-      style={{ width: '100%', height: 352, border: 0, borderRadius: 12 }}
+    <iframe src={playlist.embed} title={title} loading="lazy"
+      style={{
+        width: '100%', border: 0, borderRadius: 12, display: 'block',
+        ...(playlist.hauteur ? { height: playlist.hauteur } : { aspectRatio: '16 / 9' }),
+      }}
       allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" />
   );
 }
@@ -794,7 +797,7 @@ function MediaOverlay({ items, index, onClose, onPrev, onNext }) {
 Object.assign(window, {
   seededRandom, useMediaQuery,
   HOME_PHOTOS, KINEMATIK, ALBUMS, CARNETS, PHOTOS, CARNETS_ALL, ALEAS, BIO, LECTURE, activeNews,
-  SpotifyEmbed, ScrollReveal, ThemeToggle, PageTransition, Page, MasonryGrid, AudioPlayer,
+  PlaylistEmbed, ScrollReveal, ThemeToggle, PageTransition, Page, MasonryGrid, AudioPlayer,
   IconHome, IconMountain, IconStar, IconMenu, IconButton, BrandIcon, Popup, MediaOverlay,
   SOCIAL_ICONS, Blocks, Html, SketchFrame,
 });

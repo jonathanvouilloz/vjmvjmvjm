@@ -4,10 +4,19 @@
 | Feature | Fichier | Statut |
 |---------|---------|--------|
 | Itérations 2 → 4 — maquette MVP (wireframes + retours Vania) | docs/features/maquette-iteration-2.md | DONE |
-| Itération 5 — contenu éditable (CMS prêt), Coin lecture, news, bio FR/EN | docs/features/iteration-5-contenu-editable.md | **DONE — CMS à activer** |
+| Itération 5 — contenu éditable (CMS prêt), Coin lecture, news, bio FR/EN | docs/features/iteration-5-contenu-editable.md | DONE — CMS à activer |
+| Itération 6 — schémas CMS figés : playlists, textes riches, vignettes, « i » Kinematik | docs/features/iteration-6-schemas-cms.md | **DONE** |
 | Site propre v1 (reconstruction) | — | EN ATTENTE |
 
 ## Reprendre ici
+**Itération 6 (2026-09-17).** Les schémas Sveltia sont figés :
+- albums : `resume` (≤ 300, le « i »), `playlists[]` (plateforme · langue · URL → lecteur intégré au build) et `contenu` en Markdown ;
+- Coin lecture : `corps` en Markdown, vignettes titre ou extrait (≤ 300) ;
+- Kinematik : `information`, derrière un « i » sur la vignette.
+
+Une URL Vimeo ou YouTube seule sur sa ligne devient un lecteur. Détail →
+`docs/features/iteration-6-schemas-cms.md`. En attente de Vania : les vraies URL de playlist.
+
 **Itération 5 (2026-09-17).** Le contenu vit dans `content/` et le build le rend sur
 `window.CONTENT`. Le schéma Sveltia est dans `admin/config.yml` : le CMS attend le repo
 GitHub et le déploiement Netlify depuis git. Le Coin lecture, les news, la bio FR/EN derrière

@@ -133,16 +133,19 @@
     .vjm-prose blockquote { margin: 1.4em 0; padding-left: 1.2em; border-left: 1px solid var(--fg-subtle); font-style: italic; }
     .vjm-prose figure { margin: 2em 0; }
     .vjm-prose figure img { display: block; max-width: 100%; height: auto; margin: 0 auto; }
+    .vjm-prose img { max-width: 100%; height: auto; }
+    .vjm-prose .vjm-video iframe { display: block; width: 100%; aspect-ratio: 16 / 9; border: 0; background: #000; }
     .vjm-prose figcaption, .vjm-prose .vjm-audio-title { margin-top: 8px; font-size: 0.82em; color: var(--fg-muted); text-align: center; }
     .vjm-prose .vjm-audio-title { margin: 0 0 8px; text-align: left; }
     .vjm-prose .vjm-liste p { margin-bottom: 0.35em; font-size: 0.92em; }
     .vjm-prose .vjm-liste { margin-bottom: 1.05em; }
     .vjm-prose-small { font-size: 15px; line-height: 1.65; }
-    .fn-ref { font-size: 0.7em; line-height: 0; margin-left: 1px; font-family: var(--font-digital); }
+    .fn-ref { font-size: 0.6em; line-height: 0; margin-left: 1px; font-family: var(--font-digital); }
     .fn-ref a { text-decoration: none !important; padding: 0 2px; }
-    .vjm-notes { margin-top: 3em; padding-top: 1.4em; border-top: 1px solid var(--border); font-size: 0.86em; color: var(--fg-muted); }
-    .vjm-notes li { margin-bottom: 0.8em; list-style: none; display: flex; gap: 10px; }
-    .vjm-notes p { margin-bottom: 0.5em; }
+    /* notes discrètes : un cran sous le texte, interligne resserré */
+    .vjm-notes { margin-top: 3em; padding-top: 1.2em; border-top: 1px solid var(--border); font-size: 0.72em; line-height: 1.55; color: var(--fg-muted); }
+    .vjm-notes li { margin-bottom: 0.6em; list-style: none; display: flex; gap: 8px; }
+    .vjm-notes p { margin-bottom: 0.4em; }
     [id^="note-"], [id^="ref-"] { scroll-margin-top: calc(var(--header-h) + 24px); }
     .vjm-scroll { scrollbar-width: thin; }
     .vjm-sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }

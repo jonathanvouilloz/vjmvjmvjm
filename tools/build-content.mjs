@@ -37,7 +37,76 @@ export const typo = (text) => (text || "")
   .replace(/ »/g, "\u00A0»")
   .replace(/ ([?!:;])/g, "\u202F$1");
 
-export const renderMarkdown = (md) => footnoteRefs(marked.parse(typo(md))).trim();
+const escapeAttr = (s) => String(s).replace(/&/g, "&amp;").replace(/"/g, "&quot;");
+const unescapeAttr = (s) => s.replace(/&amp;/g, "&").replace(/&quot;/g, '"');
+
+// Une URL Vimeo ou YouTube seule sur sa ligne devient un lecteur : c'est la seule façon
+// d'intégrer une vidéo depuis l'éditeur riche du CMS, sans composant sur mesure.
+export function videoEmbed(url) {
+  let u;
+  try { u = new URL(url); } catch { return null; }
+  const host = u.hostname.replace(/^www\./, "");
+  if (host === "vimeo.com") {
+    const m = u.pathname.match(/^\/(\d+)(?:\/([0-9a-f]+))?/);
+    if (!m) return null;
+    return `https://player.vimeo.com/video/${m[1]}${m[2] ? `?h=${m[2]}` : ""}`;
+  }
+  const yt = host === "youtu.be" ? u.pathname.slice(1)
+    : /(^|\.)youtube\.com$/.test(host) && u.pathname === "/watch" ? u.searchParams.get("v")
+    : null;
+  return yt ? `https://www.youtube-nocookie.com/embed/${encodeURIComponent(yt)}` : null;
+}
+
+const mediaParagraphs = (html) => html
+  .replace(/<p><a href="([^"]+)"[^>]*>[^<]*<\/a><\/p>/g, (whole, href) => {
+    const src = videoEmbed(unescapeAttr(href));
+    return src
+      ? `<figure class="vjm-video"><iframe src="${escapeAttr(src)}" title="Vidéo" loading="lazy" allow="autoplay; fullscreen; picture-in-picture" allowfullscreen></iframe></figure>`
+      : whole;
+  })
+  // image seule dans son paragraphe → figure ; le titre Markdown sert de légende
+  .replace(/<p>(<img [^>]*?)(?: title="([^"]*)")?>\s*<\/p>/g, (_, img, title) =>
+    `<figure>${img} loading="lazy">${title ? `<figcaption>${title}</figcaption>` : ""}</figure>`);
+
+export const renderMarkdown = (md) => footnoteRefs(mediaParagraphs(marked.parse(typo(md)))).trim();
+
+/* Playlists des albums : la plateforme est choisie dans une liste fixe du CMS, l'URL est
+   celle qu'on copie dans la barre d'adresse. Le build en tire l'URL du lecteur intégré ;
+   `null` = la plateforme n'en propose pas, le site affiche un lien. */
+export function playlistEmbed({ plateforme, url }) {
+  let u;
+  try { u = new URL(url); } catch { return null; }
+  const host = u.hostname.replace(/^www\./, "");
+  switch (plateforme) {
+    case "spotify": {
+      const m = u.pathname.match(/^(?:\/intl-[a-z-]+)?(?:\/embed)?\/(playlist|album|show|episode|track|artist)\/([A-Za-z0-9]+)/);
+      return m ? { embed: `https://open.spotify.com/embed/${m[1]}/${m[2]}?utm_source=generator&theme=0`, hauteur: 352 } : null;
+    }
+    case "apple-music":
+      return /music\.apple\.com$/.test(host) ? { embed: `https://embed.music.apple.com${u.pathname}${u.search}`, hauteur: 450 } : null;
+    case "apple-podcasts":
+      return /podcasts\.apple\.com$/.test(host) ? { embed: `https://embed.podcasts.apple.com${u.pathname}${u.search}`, hauteur: 450 } : null;
+    case "deezer": {
+      const m = u.pathname.match(/\/(playlist|album|show|artist|track|episode)\/(\d+)/);
+      return m ? { embed: `https://widget.deezer.com/widget/auto/${m[1]}/${m[2]}`, hauteur: 300 } : null;
+    }
+    case "youtube": {
+      const list = u.searchParams.get("list");
+      return list ? { embed: `https://www.youtube-nocookie.com/embed/videoseries?list=${encodeURIComponent(list)}`, hauteur: null } : null;
+    }
+    case "soundcloud":
+      return /soundcloud\.com$/.test(host)
+        ? { embed: `https://w.soundcloud.com/player/?url=${encodeURIComponent(url)}&visual=false`, hauteur: 300 }
+        : null;
+    default:
+      return null;
+  }
+}
+
+// Champs Markdown d'un seul tenant (éditeur riche du CMS) : `corps` → `corpsHtml`.
+const RICH = ["corps", "contenu"];
+// Textes courts affichés tels quels : seule la typographie est corrigée.
+const PLAIN = ["extrait", "resume", "information"];
 
 function convert(node) {
   if (Array.isArray(node)) return node.map(convert);
@@ -45,7 +114,13 @@ function convert(node) {
     const out = {};
     for (const [k, v] of Object.entries(node)) out[k] = convert(v);
     if (typeof node.md === "string") out.html = renderMarkdown(node.md);
-    if (typeof node.extrait === "string") out.extrait = typo(node.extrait);
+    for (const k of RICH) if (typeof node[k] === "string") out[`${k}Html`] = renderMarkdown(node[k]);
+    for (const k of PLAIN) if (typeof node[k] === "string") out[k] = typo(node[k]).trim();
+    if (Array.isArray(node.playlists)) {
+      out.playlists = node.playlists
+        .filter((p) => p && p.url)
+        .map((p) => ({ ...p, ...(playlistEmbed(p) || { embed: null, hauteur: null }) }));
+    }
     return out;
   }
   return node;
