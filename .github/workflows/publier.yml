@@ -3,13 +3,16 @@
 # Sveltia enregistre sur la branche `content` : rien ne part en ligne à chaque sauvegarde.
 # Ce workflow verse `content` dans `main`, ce qui déclenche UN build Netlify (le plan Free
 # compte chaque déploiement en production). Il tourne :
-#   · à la demande : onglet Actions → « Publier le contenu » → Run workflow ;
+#   · à la demande : « Publish Changes » dans le CMS (événement sveltia-cms-publish),
+#     ou onglet Actions → « Publier le contenu » → Run workflow ;
 #   · chaque nuit, seulement s'il y a des modifications en attente ;
 #   · à chaque push sur `main`, pour garder `content` à jour avec le code (sans publier).
 name: Publier le contenu
 
 on:
   workflow_dispatch:
+  repository_dispatch:
+    types: [sveltia-cms-publish]
   schedule:
     - cron: "0 2 * * *" # 3 h ou 4 h en Suisse selon l'heure d'été
   push:
