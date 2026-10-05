@@ -379,16 +379,19 @@ test('build-images sizes uploads, makes thumbnails and skips missing files', asy
   b.prune();
   assert.equal(fs.readdirSync(path.join(tmp, 'assets/_gen')).length, 3);
 
-  // images collées dans les textes : réduites elles aussi, chemins réécrits
+  // images collées dans les textes : réduites elles aussi, chemins réécrits, quel que soit
+  // le dossier de assets/ où le CMS les a déposées
   const { resolveImages } = await import('../tools/build-images.mjs');
+  fs.mkdirSync(path.join(tmp, 'assets/carnets'), { recursive: true });
+  fs.copyFileSync(path.join(tmp, 'assets/uploads/photo.jpg'), path.join(tmp, 'assets/carnets/vue.jpg'));
   const data = {
     carnets: [], accueil: [], portraits: [], aleas: [], kinematik: [], lecture: [], news: [],
     bio: { fr: { pro: [{ type: 'image', src: 'assets/uploads/photo.jpg' }] } },
-    albums: [{ contenuHtml: '<figure><img src="assets/uploads/photo.jpg" alt=""></figure>' }],
+    albums: [{ contenuHtml: '<figure><img src="assets/carnets/vue.jpg" alt=""></figure>' }],
   };
   await resolveImages(data, { root: tmp });
   assert.match(data.bio.fr.pro[0].src, /^assets\/_gen\/photo-[0-9a-f]{12}\.jpg$/);
-  assert.match(data.albums[0].contenuHtml, /src="assets\/_gen\/photo-[0-9a-f]{12}\.jpg"/);
+  assert.match(data.albums[0].contenuHtml, /src="assets\/_gen\/vue-[0-9a-f]{12}\.jpg"/);
   fs.rmSync(tmp, { recursive: true, force: true });
 });
 

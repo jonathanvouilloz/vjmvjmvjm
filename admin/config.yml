@@ -3,16 +3,19 @@
 # Le build (tools/build-content.mjs) rend le Markdown : toute propriété `md`, `corps` ou
 # `contenu` devient du HTML, et les URL de playlist deviennent des lecteurs intégrés.
 
-# Chaque enregistrement crée un commit sur `main` ; Netlify reconstruit le site dans la minute.
-# Les images déposées vont dans assets/uploads/ : le build en tire dimensions et vignettes
-# (tools/build-images.mjs), une photo de téléphone peut donc être déposée telle quelle.
+# Chaque enregistrement crée un commit sur `content`, pas sur `main` : rien ne part en ligne.
+# La publication (un seul build Netlify) se fait via .github/workflows/publier.yml : bouton
+# « Publier le contenu » dans l'onglet Actions de GitHub, ou automatiquement chaque nuit.
+# La bibliothèque couvre tout assets/ (home, carnets, bio…) : un fichier déposé va dans le
+# dossier ouvert. Le build en tire dimensions et vignettes (tools/build-images.mjs), une
+# photo de téléphone peut donc être déposée telle quelle.
 backend:
   name: github
   repo: jonathanvouilloz/vjmvjmvjm
-  branch: main
+  branch: content
 
-media_folder: assets/uploads
-public_folder: assets/uploads
+media_folder: assets
+public_folder: assets
 
 collections:
   - name: lecture

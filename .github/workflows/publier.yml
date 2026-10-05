@@ -1,0 +1,66 @@
+# Publication du contenu édité dans le CMS.
+#
+# Sveltia enregistre sur la branche `content` : rien ne part en ligne à chaque sauvegarde.
+# Ce workflow verse `content` dans `main`, ce qui déclenche UN build Netlify (le plan Free
+# compte chaque déploiement en production). Il tourne :
+#   · à la demande : onglet Actions → « Publier le contenu » → Run workflow ;
+#   · chaque nuit, seulement s'il y a des modifications en attente ;
+#   · à chaque push sur `main`, pour garder `content` à jour avec le code (sans publier).
+name: Publier le contenu
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "0 2 * * *" # 3 h ou 4 h en Suisse selon l'heure d'été
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+
+concurrency:
+  group: publier
+  cancel-in-progress: false
+
+jobs:
+  publier:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Identité git
+        run: |
+          git config user.name "vjm-publication"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+      - name: Créer la branche content si elle manque
+        run: |
+          if ! git ls-remote --exit-code --heads origin content >/dev/null; then
+            git push origin HEAD:refs/heads/content
+          fi
+          git fetch origin content
+
+      # Push sur main : on ramène le code dans content, on ne publie rien.
+      - name: Mettre content à jour avec main
+        if: github.event_name == 'push'
+        run: |
+          git checkout -B content origin/content
+          git merge --no-edit origin/main
+          git push origin content
+
+      - name: Verser content dans main
+        if: github.event_name != 'push'
+        run: |
+          pending=$(git rev-list --count origin/main..origin/content)
+          if [ "$pending" -eq 0 ]; then
+            echo "Rien à publier."
+            exit 0
+          fi
+          echo "$pending modification(s) à publier."
+          git checkout -B main origin/main
+          git merge --no-edit origin/content -m "content: publication des modifications du CMS"
+          git push origin main
+          # content rattrape main (avance rapide) pour repartir du même point
+          git push origin main:content

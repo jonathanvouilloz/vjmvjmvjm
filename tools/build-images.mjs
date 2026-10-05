@@ -2,7 +2,7 @@
 
    Les listes d'images vivent dans `content/` (carnets, accueil, aléas, portraits, vignettes
    Kinematik et Coin lecture) : Vania les modifie dans Sveltia, qui dépose ses fichiers dans
-   `assets/uploads/`. Une photo de téléphone y arrive en 4000 px et 5 Mo, sans vignette ni
+   `assets/` (le dossier ouvert dans sa bibliothèque). Une photo de téléphone y arrive en 4000 px et 5 Mo, sans vignette ni
    dimensions connues. Ce module comble l'écart, à chaque build et sans script local :
      · dimensions réelles (le collage et le filtre « paysage » de l'accueil en dépendent),
        orientation EXIF comprise ;
@@ -115,7 +115,8 @@ export function createImageBuilder({ root = "." } = {}) {
 // Le chemin sert d'identifiant : deux fichiers de même nom dans deux dossiers (un carnet et
 // un dépôt du CMS) ne doivent pas se confondre dans la lightbox, qui retrouve l'image par id.
 const idOf = (src) => src;
-const UPLOAD = /^assets\/uploads\/[^"]+\.(jpe?g|png|webp|tiff?|heic)$/i;
+// Toute image de `assets/` sauf les variantes déjà produites : le CMS dépose où on lui dit.
+const UPLOAD = /^assets\/(?!_gen\/)[^"]+\.(jpe?g|png|webp|tiff?|heic)$/i;
 const TEXT_KEYS = /^(html|corpsHtml|contenuHtml)$/;
 
 /* Images insérées dans les textes (blocs image, éditeur riche) : réduites à 1600 px aussi,
@@ -126,9 +127,9 @@ async function resolveTextImages(node, b) {
   for (const [k, v] of Object.entries(node)) {
     if (k === "src" && typeof v === "string" && UPLOAD.test(clean(v))) {
       node.src = (await b.image(v, { max: 1600 }))?.src || v;
-    } else if (TEXT_KEYS.test(k) && typeof v === "string" && v.includes("assets/uploads/")) {
+    } else if (TEXT_KEYS.test(k) && typeof v === "string" && v.includes("assets/")) {
       let html = v;
-      for (const [, src] of v.matchAll(/src="\/?(assets\/uploads\/[^"]+)"/g)) {
+      for (const [, src] of v.matchAll(/src="\/?(assets\/[^"]+)"/g)) {
         if (!UPLOAD.test(src)) continue;
         const img = await b.image(src, { max: 1600 });
         if (img) html = html.split(`"${src}"`).join(`"${img.src}"`).split(`"/${src}"`).join(`"${img.src}"`);

@@ -5,3 +5,8 @@
 [build.environment]
   NODE_VERSION = "22"
   PYTHON_VERSION = "3.13"
+
+# La branche `content` reçoit les enregistrements du CMS : elle n'est jamais construite.
+# Seul `main` déploie (voir .github/workflows/publier.yml).
+[context.content]
+  ignore = "exit 0"
