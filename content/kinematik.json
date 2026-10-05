@@ -3,6 +3,7 @@
     {
       "id": "k1",
       "titre": "Charles Lloyd, Dreamer in Sound",
+      "vignette": "assets/kinematik/k1.jpg",
       "duree": "2'11\"",
       "annee": 2016,
       "vimeoId": "149041859",
@@ -15,6 +16,7 @@
     {
       "id": "k2",
       "titre": "Beyond the Trees",
+      "vignette": "assets/kinematik/k2.jpg",
       "duree": "2'17\"",
       "annee": 2011,
       "vimeoId": "298725112",
@@ -28,6 +30,7 @@
     {
       "id": "k3",
       "titre": "Chronique d'une performance",
+      "vignette": "assets/kinematik/k3.jpg",
       "duree": "1'21\"",
       "annee": 2026,
       "vimeoId": "1127787853",
@@ -40,6 +43,7 @@
     {
       "id": "k4",
       "titre": "Carte Postale de Montevidéo #1",
+      "vignette": "assets/kinematik/k4.jpg",
       "sousTitre": "Opération Béton",
       "duree": "1'54\"",
       "annee": 2019,
@@ -53,6 +57,7 @@
     {
       "id": "k5",
       "titre": "Carte Postale de Montevidéo #2",
+      "vignette": "assets/kinematik/k5.jpg",
       "sousTitre": "L'uru what",
       "duree": "3'59\"",
       "annee": 2019,
@@ -66,6 +71,7 @@
     {
       "id": "k6",
       "titre": "Carte Postale de Montevidéo #3",
+      "vignette": "assets/kinematik/k6.jpg",
       "sousTitre": "R-évolution",
       "duree": "4'26\"",
       "annee": 2020,
@@ -79,6 +85,7 @@
     {
       "id": "k7",
       "titre": "Carte Postale de Montevidéo #4",
+      "vignette": "assets/kinematik/k7.jpg",
       "sousTitre": "Les Audacieuses",
       "duree": "5'23\"",
       "annee": 2020,
@@ -92,6 +99,7 @@
     {
       "id": "k8",
       "titre": "Carte Postale de Montevidéo #5",
+      "vignette": "assets/kinematik/k8.jpg",
       "sousTitre": "Le Cube",
       "duree": "5'33\"",
       "annee": 2020,
@@ -105,6 +113,7 @@
     {
       "id": "k9",
       "titre": "Ciné-poème",
+      "vignette": "assets/kinematik/k9.jpg",
       "duree": "6'46\"",
       "annee": 2000,
       "vimeoId": "312855726",
@@ -117,6 +126,7 @@
     {
       "id": "k10",
       "titre": "Haïku #1",
+      "vignette": "assets/kinematik/k10.jpg",
       "duree": "1'00\"",
       "annee": 2017,
       "vimeoId": "243475972",
@@ -129,6 +139,7 @@
     {
       "id": "k11",
       "titre": "Haïku #2",
+      "vignette": "assets/kinematik/k11.jpg",
       "duree": "1'00\"",
       "annee": 2017,
       "vimeoId": "243478147",
@@ -141,6 +152,7 @@
     {
       "id": "k12",
       "titre": "Rhomba",
+      "vignette": "assets/kinematik/k12.jpg",
       "duree": "3'12\"",
       "annee": 2021,
       "vimeoId": "606812272",

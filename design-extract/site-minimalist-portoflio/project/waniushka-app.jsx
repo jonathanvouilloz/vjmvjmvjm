@@ -344,7 +344,8 @@ function Accueil({ onEnter }) {
   return (
     <div onClick={onEnter} style={{
       height: '100vh', width: '100vw', cursor: 'pointer', position: 'relative',
-      backgroundImage: `url(${photo})`, backgroundSize: 'cover', backgroundPosition: 'center',
+      backgroundImage: photo ? `url(${photo})` : 'none', backgroundSize: 'cover', backgroundPosition: 'center',
+      backgroundColor: '#1A1A1A',
     }}>
       <div style={{
         position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.15)',
@@ -364,7 +365,12 @@ function Accueil({ onEnter }) {
    Un fin semis de points d'encre (pleins et gris) couvre la page ; autour du curseur, ils
    sont happés et tournent autour de lui, puis regagnent leur place quand il s'éloigne.
    Canvas fixe sans interaction ; coupé au tactile et en mouvement réduit (le semis reste,
-   immobile) ; la boucle s'endort dès que tout est revenu au repos. */
+   immobile) ; la boucle s'endort dès que tout est revenu au repos.
+
+   Deux retours de Vania : les points gênaient la lecture des titres du menu, ils pâlissent
+   donc vers le centre de l'écran ; et ils ne suivaient pas assez la souris. Un point happé
+   reste maintenant accroché au curseur et est entraîné dans son sillage, jusqu'à s'éloigner
+   de TETHER pixels de sa place : il lâche alors prise et revient. */
 function DotField() {
   const ref = useRef(null);
   useEffect(() => {
@@ -373,10 +379,20 @@ function DotField() {
     const still = window.matchMedia('(prefers-reduced-motion: reduce)').matches
       || window.matchMedia('(pointer: coarse)').matches;
     const dpr = Math.min(window.devicePixelRatio || 1, 2);
-    const RADIUS = 190;
+    const RADIUS = 240;      // portée de la capture autour du curseur
+    const TETHER = 460;      // distance à sa place au-delà de laquelle un point lâche prise
+    const LEVELS = [0.14, 0.32, 0.55, 0.78, 1]; // opacités, du centre vers les bords
     let dots = [];
     let w = 0, h = 0, raf = 0, awake = false;
-    const mouse = { x: -9999, y: -9999, active: false };
+    const mouse = { x: -9999, y: -9999, vx: 0, vy: 0, active: false };
+    /* Opacité d'un point selon sa position : ellipse calée sur le bloc des titres, pâle au
+       centre, pleine encre à partir des bords du bloc. */
+    const level = (x, y) => {
+      const rx = Math.min(w * 0.36, 460), ry = Math.min(h * 0.34, 320);
+      const d = Math.hypot((x - w / 2) / rx, (y - h / 2) / ry);
+      const t = Math.min(1, Math.max(0, (d - 0.45) / 0.85));
+      return Math.min(LEVELS.length - 1, Math.floor(t * t * (3 - 2 * t) * LEVELS.length));
+    };
     const colors = () => {
       const cs = getComputedStyle(document.documentElement);
       return [cs.getPropertyValue('--fg').trim() || '#1A1A1A', cs.getPropertyValue('--fg-muted').trim() || '#8A8A8A'];
@@ -401,37 +417,43 @@ function DotField() {
     const draw = () => {
       const [ink, grey] = colors();
       ctx.clearRect(0, 0, w, h);
-      for (const tone of [0, 1]) {
-        ctx.fillStyle = tone ? grey : ink;
-        ctx.beginPath();
-        for (const d of dots) {
-          if (d.tone !== tone) continue;
-          ctx.moveTo(d.x + d.r, d.y);
-          ctx.arc(d.x, d.y, d.r, 0, Math.PI * 2);
-        }
-        ctx.fill();
+      // un tracé par ton et par niveau d'opacité : dix remplissages au lieu d'un par point
+      const paths = LEVELS.map(() => [new Path2D(), new Path2D()]);
+      for (const d of dots) {
+        const p = paths[level(d.x, d.y)][d.tone];
+        p.moveTo(d.x + d.r, d.y);
+        p.arc(d.x, d.y, d.r, 0, Math.PI * 2);
       }
+      LEVELS.forEach((alpha, i) => {
+        ctx.globalAlpha = alpha;
+        ctx.fillStyle = ink; ctx.fill(paths[i][0]);
+        ctx.fillStyle = grey; ctx.fill(paths[i][1]);
+      });
+      ctx.globalAlpha = 1;
     };
 
     const step = () => {
       let moving = mouse.active;
+      // vitesse du curseur lissée, retombée à zéro quand il s'arrête
+      mouse.vx *= 0.82; mouse.vy *= 0.82;
       for (const d of dots) {
-        let ax = (d.hx - d.x) * 0.012, ay = (d.hy - d.y) * 0.012; // rappel vers la place
+        let ax = (d.hx - d.x) * 0.008, ay = (d.hy - d.y) * 0.008; // rappel vers la place
         if (mouse.active) {
-          const dx = mouse.x - d.hx, dy = mouse.y - d.hy;
-          const dist = Math.hypot(dx, dy);
-          if (dist < RADIUS) {
-            const pull = (1 - dist / RADIUS);
-            const px = mouse.x - d.x, py = mouse.y - d.y;
-            const pd = Math.hypot(px, py) || 1;
-            // attiré vers un anneau autour du curseur, et entraîné tangentiellement
+          // capture mesurée depuis la position courante : un point happé suit le curseur
+          const px = mouse.x - d.x, py = mouse.y - d.y;
+          const pd = Math.hypot(px, py) || 1;
+          const away = Math.hypot(d.x - d.hx, d.y - d.hy);
+          if (pd < RADIUS && away < TETHER) {
+            const pull = (1 - pd / RADIUS) * (1 - away / TETHER);
+            // attiré vers un anneau autour du curseur, entraîné tangentiellement et
+            // emporté dans le sillage du mouvement
             const ring = 14 + d.r * 40;
-            const f = (pd - ring) * 0.035 * pull;
-            ax += (px / pd) * f - (py / pd) * d.spin * pull * 1.6;
-            ay += (py / pd) * f + (px / pd) * d.spin * pull * 1.6;
+            const f = (pd - ring) * 0.05 * pull;
+            ax += (px / pd) * f - (py / pd) * d.spin * pull * 1.6 + mouse.vx * pull * 0.03;
+            ay += (py / pd) * f + (px / pd) * d.spin * pull * 1.6 + mouse.vy * pull * 0.03;
           }
         }
-        d.vx = (d.vx + ax) * 0.86; d.vy = (d.vy + ay) * 0.86;
+        d.vx = (d.vx + ax) * 0.87; d.vy = (d.vy + ay) * 0.87;
         d.x += d.vx; d.y += d.vy;
         if (Math.abs(d.vx) + Math.abs(d.vy) > 0.02 || Math.abs(d.x - d.hx) + Math.abs(d.y - d.hy) > 0.3) moving = true;
       }
@@ -441,8 +463,11 @@ function DotField() {
     };
     const wake = () => { if (!awake) { awake = true; raf = requestAnimationFrame(step); } };
 
-    const onMove = (e) => { mouse.x = e.clientX; mouse.y = e.clientY; mouse.active = true; wake(); };
-    const onLeave = () => { mouse.active = false; wake(); };
+    const onMove = (e) => {
+      if (mouse.active) { mouse.vx += e.clientX - mouse.x; mouse.vy += e.clientY - mouse.y; }
+      mouse.x = e.clientX; mouse.y = e.clientY; mouse.active = true; wake();
+    };
+    const onLeave = () => { mouse.active = false; mouse.vx = mouse.vy = 0; wake(); };
     const onResize = () => { seed(); draw(); };
     seed(); draw();
     // le thème change la couleur de l'encre : on redessine quand <html data-theme> bouge
@@ -576,8 +601,8 @@ function KinTile({ v, index, isMob, onClick }) {
         transition: 'transform 0.3s ease',
       }}>
       <div style={{ position: 'relative', width: '100%', aspectRatio: tf.ratio, background: 'var(--fg-subtle)', overflow: 'hidden' }}>
-        <img src={`assets/kinematik/${v.id}.jpg`} alt={v.titre} loading="lazy"
-          style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
+        {v.vignette && <img src={v.vignette} alt={v.titre} loading="lazy"
+          style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />}
         {/* Information exceptionnelle (sélection, prix, diffusion…) : toujours visible, posée
             sur l'image comme une étiquette ; le voile du survol passe par-dessus. */}
         {v.mention && (
@@ -928,8 +953,9 @@ const DrawCanvas = React.forwardRef(function DrawCanvas({ theme }, apiRef) {
 
 /* ═══════════════════ COIN LECTURE ═══════════════════ */
 /* Collage de vignettes « de traviole », comme les carnets : largeur, décalage et rotation
-   tirés de `seededRandom`. Chaque vignette montre au choix le titre ou un extrait de
-   300 caractères au plus (content/lecture/*.json → `vignette.type`), dans un cadre dessiné. */
+   tirés de `seededRandom`. Chaque vignette montre au choix le titre, un extrait de
+   300 caractères au plus ou une image seule (content/lecture/*.json → `vignette.type`),
+   dans un cadre dessiné. */
 function ReadingTile({ t, index, isMob, onOpen }) {
   const [hov, setHov] = useState(false);
   const v = t.vignette || { type: 'titre' };
@@ -963,7 +989,10 @@ function ReadingTile({ t, index, isMob, onOpen }) {
       }}>
       <span style={{ display: 'block', position: 'relative', padding: 'clamp(22px, 2.6vw, 34px)' }}>
         <SketchFrame seed={index + 11} strokeWidth={1.1} />
-        {v.type === 'extrait' && v.extrait ? (
+        {v.type === 'image' && v.image ? (
+          <img src={v.image} alt="" loading="lazy" width={v.w} height={v.h}
+            style={{ display: 'block', width: '100%', height: 'auto' }} />
+        ) : v.type === 'extrait' && v.extrait ? (
           <React.Fragment>
             <span style={{
               display: 'block', fontFamily: 'var(--font-body)', fontStyle: 'italic',
@@ -1185,7 +1214,7 @@ function BioPage() {
   const textes = BIO.textes[lang] || BIO.textes.fr;
   const changeLang = (l) => { setLang(l); writeLang(l); };
   const portrait = useMemo(() => BIO.portraits[Math.floor(Math.random() * BIO.portraits.length)], []);
-  const portraitImg = (
+  const portraitImg = portrait && (
     <img src={portrait} alt="Vania Jaikin Miyazaki" loading="lazy" style={{
       width: '100%', aspectRatio: isMob ? '4 / 5' : '3 / 4', objectFit: 'cover', objectPosition: 'center',
       display: 'block',
@@ -1254,7 +1283,7 @@ function App() {
 
   const toggleTheme = useCallback(() => setTheme((v) => (v === 'light' ? 'dark' : 'light')), []);
   const go = useCallback((p) => { setPage(p); setMenuOpen(false); }, []);
-  const openStar = useCallback(() => setAleas(ALEAS[Math.floor(Math.random() * ALEAS.length)]), []);
+  const openStar = useCallback(() => setAleas(ALEAS[Math.floor(Math.random() * ALEAS.length)] || null), []);
   const openMedia = useCallback((items, index) => setMedia({ items, index }), []);
   const mediaPrev = useCallback(() => setMedia((m) => ({ ...m, index: (m.index - 1 + m.items.length) % m.items.length })), []);
   const mediaNext = useCallback(() => setMedia((m) => ({ ...m, index: (m.index + 1) % m.items.length })), []);

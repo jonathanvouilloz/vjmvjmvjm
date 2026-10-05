@@ -3,6 +3,7 @@ import presetReact from "@babel/preset-react";
 import fs from "node:fs";
 import path from "node:path";
 import { loadContent } from "./tools/build-content.mjs";
+import { resolveImages } from "./tools/build-images.mjs";
 
 // `node precompile.mjs`        → build de travail à la racine (panneau Tweaks inclus + auto-ouvert)
 // `node precompile.mjs --prod` → build de déploiement dans dist/ (sans Tweaks, assets copiés)
@@ -14,22 +15,20 @@ const read = (p) => fs.readFileSync(p, "utf8");
 const wrap = (name, src) => `\n/* === ${name} === */\n;(function(){\n${src}\n})();\n`;
 
 const tweaks = read(`${PROJ}/tweaks-panel.jsx`);
-const assets = read(`${PROJ}/waniushka-assets.jsx`);
 const comps  = read(`${PROJ}/waniushka-components.jsx`);
 const app    = read(`${PROJ}/waniushka-app.jsx`);
 
-// `waniushka-assets.jsx` est généré par tools/import-images.py et pose l'inventaire des
-// images sur `window` — il passe donc AVANT les composants, qui le lisent au chargement.
 // Le panneau Tweaks n'est plus utilisé par l'app (aucune référence dans app/components) :
 // on le laisse hors du bundle de prod.
 // `content/` : ce que le CMS éditera. Le Markdown y est rendu au build ; le résultat est posé
-// sur `window.CONTENT` avant les composants, comme l'inventaire des images.
+// sur `window.CONTENT` avant les composants. Les images listées dans `content/` y arrivent
+// avec leurs dimensions et leurs vignettes, calculées par tools/build-images.mjs.
 const CONTENT = loadContent();
+CONTENT.images = await resolveImages(CONTENT);
 const content = `window.CONTENT = ${JSON.stringify(CONTENT)};`;
 
 const source = (PROD ? "" : wrap("tweaks-panel.jsx", tweaks))
   + wrap("content", content)
-  + wrap("waniushka-assets.jsx", assets)
   + wrap("waniushka-components.jsx", comps) + wrap("waniushka-app.jsx", app);
 
 const { code } = transformSync(source, {
@@ -56,6 +55,19 @@ const menuFont = CONTENT.site.policeMenu || "Open Sans";
 html = html
   .replace("family=Open+Sans:", `family=${menuFont.trim().replace(/\s+/g, "+")}:`)
   .replace("--font-menu: 'Open Sans'", `--font-menu: '${menuFont}'`);
+// Référencement : description et profils (`sameAs`) viennent de content/site.json.
+const attr = (t) => String(t).replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;");
+if (CONTENT.site.description) {
+  html = html
+    .replace(/(<meta name="description" content=")[^"]*"/, (_, a) => `${a}${attr(CONTENT.site.description)}"`)
+    .replace(/(<meta property="og:description" content=")[^"]*"/, (_, a) => `${a}${attr(CONTENT.site.description)}"`)
+    .replace(/(<main class="vjm-sr">\s*<h1>[^<]*<\/h1>\s*<p>)[^<]*/, (_, a) => `${a}${attr(CONTENT.site.description)}`);
+}
+if (CONTENT.site.description && !html.includes(`content="${attr(CONTENT.site.description)}"`)) {
+  throw new Error("Description de content/site.json non injectée : balises meta du gabarit modifiées ?");
+}
+const sameAs = (CONTENT.site.social || []).map((s) => s.url).filter(Boolean);
+html = html.replace(/"sameAs": \[[^\]]*\]/, () => `"sameAs": ${JSON.stringify(sameAs)}`);
 // Remove the three text/babel script tags + babel.min.js, replace with one plain script.
 html = html.replace(/\s*<script[^>]*babel\.min\.js[^>]*><\/script>/g, "");
 html = html.replace(/\s*<script type="text\/babel"[^>]*><\/script>/g, "");

@@ -23,8 +23,8 @@
 - Preview : `python tools/serve.py 8123` puis `http://localhost:8123/index.html`
   (⚠ **pas** `python -m http.server`, qui ignore les requêtes `Range` : chaque saut audio ramène la lecture à zéro. `file://` reste bloqué par l'extension Chrome.)
 - Preview de `dist/` : `python tools/serve.py 8124 dist`
-- Paquet Netlify : `node precompile.mjs --prod` puis `python tools/package-netlify.py`
-- Après une livraison d'images : `python tools/import-images.py`, puis rebuild
+- Déploiement : push sur `main` → Netlify lance `npm run build` et publie `dist/` (`netlify.toml`). Le CMS (`/admin/`) commite sur `main` lui aussi.
+- Images : listées dans `content/` (CMS) ; le build les prépare (`tools/build-images.mjs` → `assets/_gen/`). Import en masse depuis `JONATHAN/` : `python tools/import-images.py`, puis rebuild
 - Tests : `npm test`
 - Blocages hors code (Vimeo 401, poster noir, titres, poids de `dist/`) → `cerveau/10-Projets/wania/wania-human.md`
 

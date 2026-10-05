@@ -21,26 +21,26 @@ function useMediaQuery(query) {
 
 /* ═══ Itération 2 — data maquette (contenu partiel, en dur) ═══ */
 
-/* Inventaire des images, généré par tools/import-images.py dans waniushka-assets.jsx.
-   Chaque entrée : { id, src, w, h, thumb?, title? }. Relancer le script après tout ajout
-   de Vania dans JONATHAN/ — rien n'est listé à la main ici. */
-const { CARNETS_SRC, HOME_SRC, PORTRAITS_SRC, ALEAS_SRC } = window;
+/* Contenu éditable : `content/*.json`, lu au build par tools/build-content.mjs et posé sur
+   `window.CONTENT`. Toute propriété `md` y a déjà sa sœur `html`.
+   Les images listées dans le CMS arrivent dans `CONTENT.images`, avec dimensions réelles et
+   vignettes calculées par tools/build-images.mjs : { id, src, w, h, thumb?, title? }. */
+const CONTENT = window.CONTENT;
+const { carnets: CARNETS_SRC, home: HOME_SRC, portraits: PORTRAITS_SRC, aleas: ALEAS_SRC } = CONTENT.images;
 
 /* Accueil : photos aléatoires plein écran.
    ⚠ PAYSAGE uniquement — l'affichage est en background cover 100vw/100vh, une photo
    portrait s'y retrouve rognée sur toute sa hauteur. Le filtre se fait sur les dimensions
-   réelles relevées à l'import, plus sur une liste tenue à la main. */
-const HOME_PHOTOS = HOME_SRC.filter((p) => p.w / p.h > 1.15).map((p) => p.src);
-
-/* Contenu éditable : `content/*.json`, lu au build par tools/build-content.mjs et posé sur
-   `window.CONTENT`. Toute propriété `md` y a déjà sa sœur `html`. */
-const CONTENT = window.CONTENT;
+   réelles relevées au build, plus sur une liste tenue à la main. */
+const LANDSCAPES = HOME_SRC.filter((p) => p.w / p.h > 1.15);
+/* sans aucun paysage dans la liste du CMS, mieux vaut une photo rognée qu'un fond vide */
+const HOME_PHOTOS = (LANDSCAPES.length ? LANDSCAPES : HOME_SRC).map((p) => p.src);
 
 /* Kinematik : `titre` + `sousTitre` sur deux lignes (un tiret tombait n'importe où sur une
    vignette étroite). `trailer` explique une durée de deux minutes pour un film de quatre-vingt-dix.
    `mention` : information exceptionnelle affichée en permanence sur la vignette.
    `resume` (blocs) et `generique` : derrière le « i » de la lightbox.
-   Les vignettes sont dans `assets/kinematik/{id}.jpg` (tools/fetch-thumbs.py). */
+   `vignette` : l'image de la tuile, choisie dans le CMS (assets/kinematik/{id}.jpg par défaut). */
 const KINEMATIK = CONTENT.kinematik;
 
 /* Films pour les oreilles. `resume` (300 caractères) = la pop-up du « i ». `playlists` =
@@ -48,7 +48,7 @@ const KINEMATIK = CONTENT.kinematik;
    le texte riche de la page. `episodes` = les masters joués par le lecteur du site. */
 const ALBUMS = CONTENT.albums.map((a) => ({ ...a, episodes: a.episodes?.length ? a.episodes : null }));
 
-/* Carnets de voyage : les 53 pages scannées, titrées par leur nom de fichier. */
+/* Carnets de voyage : les pages scannées, dans l'ordre et avec les titres du CMS. */
 const CARNETS = CARNETS_SRC;
 
 /* Les photos de l'accueil s'affichent en `background: cover` plein écran, donc rognées —
@@ -57,13 +57,15 @@ const CARNETS = CARNETS_SRC;
 const PHOTOS = HOME_SRC;
 
 /* Entrelacement déterministe carnets × photos : concaténées, elles formeraient deux blocs
-   nets au lieu d'un collage. Tri par clé pseudo-aléatoire stable (même ordre à chaque visite). */
-const CARNETS_ALL = [...CARNETS, ...PHOTOS]
+   nets au lieu d'un collage. Tri par clé pseudo-aléatoire stable (même ordre à chaque visite).
+   Une même image listée dans l'accueil ET les carnets n'y figure qu'une fois : la lightbox
+   retrouve l'image par son id (son chemin), un doublon l'enverrait sur la première copie. */
+const CARNETS_ALL = [...new Map([...CARNETS, ...PHOTOS].map((item) => [item.id, item])).values()]
   .map((item, i) => ({ item, k: seededRandom(i * 7 + 3) }))
   .sort((a, b) => a.k - b.k)
   .map((e) => e.item);
 
-/* Aléas du jour : les 24 phrases manuscrites de Vania, détourées en PNG transparents par
+/* Aléas du jour : les phrases manuscrites de Vania, détourées en PNG transparents par
    tools/cutout-drawing.py. Ce sont des images et non du texte — c'est sa main, pas une
    police qui l'imite (les deux manuscrites du site étaient sous licence non commerciale). */
 const ALEAS = ALEAS_SRC;
@@ -74,7 +76,7 @@ const BIO = {
   textes: CONTENT.bio,
   /* Série d'autoportraits fournie par Vania : la page bio en tire un au hasard à chaque
      visite, comme l'accueil tire sa photo. */
-  portraits: PORTRAITS_SRC.map((p) => p.src),
+  portraits: PORTRAITS_SRC,
 };
 
 /* Coin lecture : un fichier par texte dans content/lecture/, déjà triés. */

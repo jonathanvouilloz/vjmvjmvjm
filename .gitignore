@@ -24,3 +24,6 @@ __pycache__/
 Thumbs.db
 *.swp
 /waniushka-netlify-rc*.zip
+
+# Images préparées au build (tools/build-images.mjs)
+/assets/_gen/

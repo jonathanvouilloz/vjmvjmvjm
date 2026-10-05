@@ -1,8 +1,9 @@
 """Importe les images livrées par Vania (`JONATHAN/`) vers `assets/`, prêtes pour le web.
 
 Les dossiers sources sont des scans et des photos brutes : noms accentués, TIFF, orientations
-EXIF, fichiers de 2 à 5 Mo. Ce script les normalise en une passe idempotente et écrit le
-fichier de data généré que le bundle consomme.
+EXIF, fichiers de 2 à 5 Mo. Ce script les normalise en une passe idempotente et ajoute les
+nouvelles images aux listes de `content/`, que le CMS édite ensuite. Pour une image isolée,
+le CMS suffit : il la dépose telle quelle et le build la prépare.
 
 Deux tailles par image de galerie :
   · `nom.jpg`    — la version pleine, ouverte dans la lightbox (et en fond d'accueil)
@@ -11,7 +12,8 @@ Deux tailles par image de galerie :
 
 Usage   : python tools/import-images.py
 Sorties : assets/carnets/, assets/home/, assets/bio/portraits/
-          design-extract/site-minimalist-portoflio/project/waniushka-assets.jsx
+          content/carnets.json, accueil.json, aleas.json, bio.json (`portraits`) — complétés,
+          jamais réécrits : les titres et l'ordre saisis dans le CMS sont conservés.
 """
 
 import json
@@ -29,7 +31,6 @@ sys.stdout.reconfigure(encoding="utf-8", errors="replace")
 ROOT = Path(__file__).resolve().parent.parent
 SRC = ROOT / "JONATHAN"
 ASSETS = ROOT / "assets"
-GENERATED = ROOT / "design-extract" / "site-minimalist-portoflio" / "project" / "waniushka-assets.jsx"
 
 THUMB = 700       # côté long des vignettes de collage
 QUALITY = 82
@@ -125,29 +126,43 @@ def run_job(job):
     return entries
 
 
-def emit(data):
-    """Écrit le fichier de data généré, concaténé au bundle par precompile.mjs."""
-    body = ",\n".join(f"  {k}: {json.dumps(v, ensure_ascii=False)}" for k, v in data.items())
-    GENERATED.write_text(
-        "/* waniushka-assets.jsx — GÉNÉRÉ par tools/import-images.py, ne pas éditer à la main.\n"
-        "   Inventaire des images de `assets/`, avec dimensions réelles (les vignettes Kinematik\n"
-        "   et le collage s'en servent pour ne pas déformer) et titres tirés des noms de fichiers. */\n"
-        f"Object.assign(window, {{\n{body},\n}});\n",
-        encoding="utf-8",
-    )
-    print(f"  {GENERATED.relative_to(ROOT)}")
+def existing(out):
+    """Images déjà présentes avant l'import : elles ne sont pas « nouvelles »."""
+    return {f"assets/{out}/{f.name}" for f in (ASSETS / out).glob("*.jpg")} if (ASSETS / out).exists() else set()
+
+
+def merge(file, key, entries, item, before):
+    """Complète une liste de `content/` sans écraser ce que le CMS y a édité.
+
+    L'ordre et les titres saisis dans Sveltia priment : une image déjà listée garde sa
+    place et son titre, une image dont le fichier a disparu sort de la liste, et seules les
+    images vraiment nouvelles (absentes de `assets/` avant l'import) s'ajoutent à la fin.
+    Une image que Vania a retirée dans le CMS ne revient donc pas au prochain import.
+    Les ajouts faits depuis le CMS (assets/uploads/) sont gardés."""
+    path = ROOT / "content" / file
+    data = json.loads(path.read_text(encoding="utf-8")) if path.exists() else {}
+    first = key not in data
+    current = data.get(key, [])
+    src_of = lambda e: e["image"] if isinstance(e, dict) else e
+    kept = [e for e in current if (ROOT / src_of(e)).exists()]
+    known = {src_of(e) for e in kept}
+    added = [item(e) for e in entries if e["src"] not in known and (first or e["src"] not in before)]
+    data[key] = kept + added
+    path.write_text(json.dumps(data, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    print(f"  content/{file} : {len(added)} ajoutée(s), {len(current) - len(kept)} retirée(s)")
 
 
 if __name__ == "__main__":
-    data = {}
-    for job in JOBS:
-        key = {"carnets": "CARNETS_SRC", "home": "HOME_SRC", "bio/portraits": "PORTRAITS_SRC"}[job["out"]]
-        data[key] = run_job(job)
+    before = {job["out"]: existing(job["out"]) for job in JOBS}
+    results = {job["out"]: run_job(job) for job in JOBS}
+    merge("carnets.json", "carnets", results["carnets"],
+          lambda e: {"image": e["src"], "titre": e.get("title", "")}, before["carnets"])
+    merge("accueil.json", "photos", results["home"], lambda e: e["src"], before["home"])
+    merge("bio.json", "portraits", results["bio/portraits"], lambda e: e["src"], before["bio/portraits"])
 
     # Les aléas sont détourés par tools/cutout-drawing.py, pas convertis ici : on se contente
     # de les inventorier s'ils sont déjà là, pour que les deux scripts restent indépendants.
+    # Un aléa n'est ajouté qu'à son premier inventaire (liste absente) : ensuite, le CMS décide.
     aleas = sorted((ASSETS / "aleas").glob("alea-*.png")) if (ASSETS / "aleas").exists() else []
-    data["ALEAS_SRC"] = [f"assets/aleas/{p.name}" for p in aleas]
-    print(f"aléas déjà détourés : {len(aleas)}")
-
-    emit(data)
+    merge("aleas.json", "aleas", [{"src": f"assets/aleas/{p.name}"} for p in aleas], lambda e: e["src"],
+          {f"assets/aleas/{p.name}" for p in aleas})

@@ -137,12 +137,23 @@ export function loadContent(dir = "content") {
       .filter((t) => t.publie !== false)
       .sort((a, b) => (a.ordre ?? 999) - (b.ordre ?? 999) || a.titre.localeCompare(b.titre))
     : [];
+  const optional = (file, key) => {
+    const f = path.join(dir, file);
+    return fs.existsSync(f) ? readJson(f)[key] || [] : [];
+  };
+  // Les portraits sont édités avec la bio, mais ce sont des images : resolveImages les traite
+  // avec les autres galeries.
+  const { portraits = [], ...bio } = readJson(path.join(dir, "bio.json"));
   return convert({
     site: readJson(path.join(dir, "site.json")),
-    bio: readJson(path.join(dir, "bio.json")),
+    bio,
+    portraits,
     kinematik: readJson(path.join(dir, "kinematik.json")).films,
     albums: readJson(path.join(dir, "albums.json")).albums,
     news: readJson(path.join(dir, "news.json")).news,
+    carnets: optional("carnets.json", "carnets"),
+    accueil: optional("accueil.json", "photos"),
+    aleas: optional("aleas.json", "aleas"),
     lecture,
   });
 }

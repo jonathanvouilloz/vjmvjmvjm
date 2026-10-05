@@ -15,7 +15,7 @@ sys.stdout.reconfigure(encoding="utf-8", errors="replace")
 
 ROOT = Path(__file__).resolve().parent.parent
 DIST = ROOT / "dist"
-AUDIO_DIR = DIST / "assets" / "audio"
+AUDIO_DIR = DIST / "assets"  # assets/audio, et les MP3 déposés par le CMS dans assets/uploads
 AUDIO_BITRATE = "48k"
 MAX_DURATION_DELTA = 0.25
 
@@ -94,7 +94,7 @@ if __name__ == "__main__":
     require("ffmpeg")
     require("ffprobe")
     if not AUDIO_DIR.exists():
-        raise SystemExit("dist/assets/audio absent — lancer le build de production d'abord")
+        raise SystemExit("dist/assets absent — lancer le build de production d'abord")
 
     files = sorted(AUDIO_DIR.rglob("*.mp3"))
     before = after = 0

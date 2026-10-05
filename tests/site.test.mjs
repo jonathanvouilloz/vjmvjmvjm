@@ -1,6 +1,9 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync, existsSync } from 'node:fs';
+import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
 
 const root = new URL('../', import.meta.url);
 const read = (path) => readFileSync(new URL(path, root), 'utf8');
@@ -319,19 +322,74 @@ test('albums carry a short summary, playlists and a rich page text', async () =>
   assert.match(app(), /\{infoAlbumObj\.resume\}/);
 });
 
-test('the CMS schema bounds short texts and drops image thumbnails for reading', () => {
+test('the CMS schema bounds short texts and offers title, excerpt or image vignettes', () => {
   const config = read('admin/config.yml');
   for (const name of ['resume', 'extrait', 'information']) {
-    assert.match(config, new RegExp(`name: ${name},[^\n]*maxlength: 300`), `${name} limité à 300`);
+    assert.match(config, new RegExp(`name: ${name},.*maxlength: 300`), `${name} limité à 300`);
   }
   assert.match(config, /name: corps\s+label: Texte\s+widget: markdown/);
   assert.match(config, /name: contenu\s+label: "Texte de la page"\s+widget: markdown/);
   assert.match(config, /name: playlists[\s\S]*name: plateforme[\s\S]*name: langue[\s\S]*name: url/);
-  assert.doesNotMatch(config, /name: image, label: Image, widget: image, required: false/);
-  assert.doesNotMatch(app(), /v\.type === 'image'/);
+  assert.match(config, /label: "Une image", value: image/);
+  assert.match(app(), /v\.type === 'image' && v\.image/);
   const text = content('lecture/ma-mere.json');
   assert.ok(!('blocks' in text) && typeof text.corps === 'string');
-  assert.ok(!('image' in text.vignette));
+});
+
+test('every image list of the site is editable in the CMS', () => {
+  const config = read('admin/config.yml');
+  for (const file of ['carnets', 'accueil', 'aleas']) {
+    assert.ok(config.includes(`file: content/${file}.json`), `${file} absent du CMS`);
+  }
+  assert.match(config, /name: portraits[\s\S]*widget: image/);
+  assert.match(config, /name: vignette, label: "Image de la vignette", widget: image/);
+  assert.match(config, /name: description, label:/);
+  assert.equal(content('carnets.json').carnets.length, 53);
+  assert.equal(content('accueil.json').photos.length, 64);
+  assert.equal(content('aleas.json').aleas.length, 24);
+  assert.equal(content('bio.json').portraits.length, 15);
+  assert.ok(content('kinematik.json').films.every((f) => f.vignette));
+  assert.ok(!existsSync(new URL('design-extract/site-minimalist-portoflio/project/waniushka-assets.jsx', root)));
+});
+
+test('build-images sizes uploads, makes thumbnails and skips missing files', async () => {
+  const { createImageBuilder } = await import('../tools/build-images.mjs');
+  const sharp = (await import('sharp')).default;
+  const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'vjm-img-'));
+  fs.mkdirSync(path.join(tmp, 'assets/uploads'), { recursive: true });
+  await sharp({ create: { width: 4000, height: 3000, channels: 3, background: '#888' } })
+    .jpeg().toFile(path.join(tmp, 'assets/uploads/photo.jpg'));
+  const b = createImageBuilder({ root: tmp });
+  const img = await b.image('/assets/uploads/photo.jpg', { max: 1280, thumb: true });
+  assert.deepEqual([img.w, img.h], [1280, 960]);
+  assert.match(img.src, /^assets\/_gen\/photo-[0-9a-f]{12}\.jpg$/);
+  assert.match(img.thumb, /^assets\/_gen\/photo-[0-9a-f]{12}-t\.jpg$/);
+  const thumb = await sharp(path.join(tmp, img.thumb)).metadata();
+  assert.equal(Math.max(thumb.width, thumb.height), 700);
+  assert.equal(await b.image('assets/uploads/absente.jpg'), null);
+  // un TIFF, même petit, est converti ; un fichier illisible est ignoré sans casser le build
+  await sharp({ create: { width: 300, height: 200, channels: 3, background: '#333' } })
+    .tiff().toFile(path.join(tmp, 'assets/uploads/scan.tif'));
+  assert.match((await b.image('assets/uploads/scan.tif')).src, /^assets\/_gen\/scan-[0-9a-f]{12}\.jpg$/);
+  fs.writeFileSync(path.join(tmp, 'assets/uploads/casse.jpg'), 'pas une image');
+  assert.equal(await b.image('assets/uploads/casse.jpg'), null);
+  assert.match(b.warnings[0], /absente\.jpg/);
+  assert.match(b.warnings[1], /illisible.*casse\.jpg/);
+  fs.writeFileSync(path.join(tmp, 'assets/_gen/orpheline.jpg'), '');
+  b.prune();
+  assert.equal(fs.readdirSync(path.join(tmp, 'assets/_gen')).length, 3);
+
+  // images collées dans les textes : réduites elles aussi, chemins réécrits
+  const { resolveImages } = await import('../tools/build-images.mjs');
+  const data = {
+    carnets: [], accueil: [], portraits: [], aleas: [], kinematik: [], lecture: [], news: [],
+    bio: { fr: { pro: [{ type: 'image', src: 'assets/uploads/photo.jpg' }] } },
+    albums: [{ contenuHtml: '<figure><img src="assets/uploads/photo.jpg" alt=""></figure>' }],
+  };
+  await resolveImages(data, { root: tmp });
+  assert.match(data.bio.fr.pro[0].src, /^assets\/_gen\/photo-[0-9a-f]{12}\.jpg$/);
+  assert.match(data.albums[0].contenuHtml, /src="assets\/_gen\/photo-[0-9a-f]{12}\.jpg"/);
+  fs.rmSync(tmp, { recursive: true, force: true });
 });
 
 test('Kinematik tiles show an optional information behind a small i', () => {
