@@ -1,6 +1,43 @@
 # Feature — Itération 6 : schémas CMS figés (playlists, textes riches, vignettes, « i » Kinematik)
 
-## Etat session 2026-09-17 — DONE
+## Etat session 2026-09-17
+
+**Fait :**
+- schémas Sveltia figés : `resume`, `playlists` et `contenu` pour les albums ; `corps` et une vignette titre/extrait pour le Coin lecture ; `information` pour Kinematik ;
+- le build convertit les URL de playlist et les vidéos seules sur leur ligne en lecteurs intégrés ;
+- page album refaite : langue, onglets de plateforme, liens ; « i » Kinematik ; notes réduites ;
+- contenus migrés ; 31 tests verts ; Playwright OK sur le build de travail et sur `dist/`.
+
+**Prochain :** saisir dans le CMS les vraies URL de playlist dès que Vania les fournit (tâche dans `wania-human.md`). Ensuite, activer le CMS : repo GitHub + Netlify, voir l'itération 5.
+
+**Pieges :**
+- Au tactile, un tap émet `pointerenter` et `mouseleave`. Le survol et la fermeture du « i » Kinematik ne réagissent donc qu'à `pointerType === 'mouse'`, et le focus qu'à `:focus-visible`.
+- Le résumé d'album est du texte brut : un lien Markdown n'y serait pas rendu.
+- Le compteur de 300 caractères et l'insertion d'image dans Sveltia n'ont pas été testés en vrai : le mode dépôt local demande un sélecteur de dossier.
+
+**Commit :** a0f50ad feat: freeze CMS schemas for playlists, rich text and Kinematik info
+
+---
+
+## Carte du code
+> Mise a jour : 2026-09-17
+
+| Fichier | Role |
+|---------|------|
+| `admin/config.yml` | Schémas Sveltia : playlists (plateformes et langues fixes), champs Markdown, limites à 300 caractères, ancre `&blocks` sur les news |
+| `tools/build-content.mjs` | `playlistEmbed` (URL → lecteur), `videoEmbed` et figures dans le Markdown, champs `RICH` / `PLAIN` |
+| `content/albums.json`, `content/lecture/ma-mere.json`, `content/kinematik.json` | Contenus migrés vers le nouveau schéma |
+| `design-extract/site-minimalist-portoflio/project/waniushka-app.jsx` | `Playlists`, `AlbumPage`, `FilmsPage` (« i » conditionnel), `KinTile` (« i » information), `ReadingTile`/`ReadingText`, `LangSwitch` généralisé |
+| `design-extract/site-minimalist-portoflio/project/waniushka-components.jsx` | `PlaylistEmbed` (remplace `SpotifyEmbed`) |
+| `design-extract/site-minimalist-portoflio/project/Waniushka Portfolio.html` | Notes réduites (`.vjm-notes`, `.fn-ref`), styles `.vjm-video` et images du texte riche |
+| `tests/site.test.mjs` | Tests des embeds, du schéma, des albums, du « i » Kinematik et des notes |
+
+### Decisions cles
+- Plateformes en liste fixe : le build doit savoir construire l'URL du lecteur. « Autre » reste un simple lien.
+- Un seul champ Markdown pour les textes riches. La bio, les news et le résumé Kinematik gardent les blocs.
+- Le texte de Vania n'est jamais réécrit pour tenir en 300 caractères : ce qui dépasse passe dans `contenu`.
+
+## Détail de l'itération (DONE)
 
 Vania va éditer seule dans Sveltia une fois le site sur Netlify. Les schémas de
 `admin/config.yml` sont donc figés avant l'activation.
@@ -81,13 +118,3 @@ Vania va éditer seule dans Sveltia une fois le site sur Netlify. Les schémas d
 
 - Les vraies URL de playlist par plateforme et par langue, à obtenir de Vania (`wania-human.md`).
 - Le point CI Netlify de l'itération 5 (`optimize-dist.py` / ffmpeg) reste ouvert.
-
-## Carte du code
-
-- `admin/config.yml` — schémas
-- `tools/build-content.mjs` — `videoEmbed`, `playlistEmbed`, `RICH` / `PLAIN`
-- `content/albums.json`, `content/kinematik.json`, `content/lecture/ma-mere.json`
-- `design-extract/site-minimalist-portoflio/project/waniushka-app.jsx` — `KinTile`, `Playlists`, `AlbumPage`, `FilmsPage`, `ReadingTile`, `ReadingText`, `LangSwitch`, pop-up d'album dans `App`
-- `design-extract/site-minimalist-portoflio/project/waniushka-components.jsx` — `PlaylistEmbed`
-- `design-extract/site-minimalist-portoflio/project/Waniushka Portfolio.html` — `.vjm-notes`, `.fn-ref`, `.vjm-video`
-- `tests/site.test.mjs`

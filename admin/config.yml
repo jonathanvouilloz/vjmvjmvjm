@@ -8,7 +8,7 @@
 # (« Work with Local Repository ») sur http://localhost.
 backend:
   name: github
-  repo: OWNER/wania
+  repo: jonathanvouilloz/vjmvjmvjm
   branch: main
 
 media_folder: assets/uploads

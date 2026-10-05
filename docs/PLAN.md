@@ -19,8 +19,14 @@
   Le message client ci-dessous dit encore « de bord » — c'est une citation d'archive, ne pas la réécrire.
 
 ## Build & preview
-- Build : `node precompile.mjs`
-- Preview : `python -m http.server 8123` puis `http://localhost:8123/index.html` (le `file://` est bloqué par l'extension Chrome).
+- Build : `node precompile.mjs` (travail) / `node precompile.mjs --prod` (→ `dist/`)
+- Preview : `python tools/serve.py 8123` puis `http://localhost:8123/index.html`
+  (⚠ **pas** `python -m http.server`, qui ignore les requêtes `Range` : chaque saut audio ramène la lecture à zéro. `file://` reste bloqué par l'extension Chrome.)
+- Preview de `dist/` : `python tools/serve.py 8124 dist`
+- Paquet Netlify : `node precompile.mjs --prod` puis `python tools/package-netlify.py`
+- Après une livraison d'images : `python tools/import-images.py`, puis rebuild
+- Tests : `npm test`
+- Blocages hors code (Vimeo 401, poster noir, titres, poids de `dist/`) → `cerveau/10-Projets/wania/wania-human.md`
 
 ---
 
