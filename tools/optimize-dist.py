@@ -20,15 +20,33 @@ AUDIO_BITRATE = "48k"
 MAX_DURATION_DELTA = 0.25
 
 
+NPM_BINARIES = {
+    "ffmpeg": "require('ffmpeg-static')",
+    "ffprobe": "require('ffprobe-static').path",
+}
+BINARIES = {}
+
+
 def require(command):
-    if not shutil.which(command):
+    """Binaire système, sinon celui des paquets npm (cas du build Netlify, sans ffmpeg)."""
+    found = shutil.which(command)
+    if not found and shutil.which("node"):
+        result = subprocess.run(
+            ["node", "-p", NPM_BINARIES[command]],
+            cwd=ROOT, capture_output=True, text=True,
+        )
+        candidate = result.stdout.strip()
+        if result.returncode == 0 and candidate and Path(candidate).is_file():
+            found = candidate
+    if not found:
         raise SystemExit(f"{command} absent — impossible d'optimiser l'audio de publication")
+    BINARIES[command] = found
 
 
 def duration(path):
     result = subprocess.run(
         [
-            "ffprobe", "-v", "error", "-show_entries", "format=duration",
+            BINARIES["ffprobe"], "-v", "error", "-show_entries", "format=duration",
             "-of", "default=noprint_wrappers=1:nokey=1", str(path),
         ],
         check=True,
@@ -47,7 +65,7 @@ def optimize_audio(path):
     try:
         subprocess.run(
             [
-                "ffmpeg", "-hide_banner", "-loglevel", "error", "-y",
+                BINARIES["ffmpeg"], "-hide_banner", "-loglevel", "error", "-y",
                 "-i", str(path), "-vn", "-map_metadata", "-1",
                 "-codec:a", "libmp3lame", "-b:a", AUDIO_BITRATE,
                 "-ac", "1", str(temporary),
