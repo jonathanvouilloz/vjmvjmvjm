@@ -27,3 +27,6 @@ Thumbs.db
 
 # Images préparées au build (tools/build-images.mjs)
 /assets/_gen/
+
+# Local Netlify folder
+.netlify
