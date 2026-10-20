@@ -5,5 +5,5 @@ import sitemap from "@astrojs/sitemap";
 export default defineConfig({
   site: "https://vjmvjmvjm.com",
   output: "static",
-  integrations: [react(), sitemap()],
+  integrations: [react(), sitemap({ filter: (p) => !/\/carnets\/[^/]+\/?$/.test(p) && !p.endsWith("/404/") })],
 });

@@ -5,13 +5,15 @@ import Header from "../../components/Header.astro";
 import Page from "../../components/Page.astro";
 import BackLink from "../../components/BackLink.astro";
 import ReadingTile from "../../components/ReadingTile.astro";
+import { itemList } from "../../lib/seo";
 
 // Textes publiés, par `ordre` puis par titre : comme l'ancien build.
 const textes = (await getCollection("lecture"))
   .filter((t) => t.data.publie)
   .sort((a, b) => a.data.ordre - b.data.ordre || a.data.titre.localeCompare(b.data.titre));
 ---
-<Base title="Coin lecture — Vania Jaikin Miyazaki" path="/lecture">
+<Base title="Coin lecture — Vania Jaikin Miyazaki" path="/lecture"
+  ld={{ ...itemList(textes.map((t) => ({ name: t.data.titre, url: `/lecture/${t.id}` }))), name: "Coin lecture" }}>
   <Header />
   <Page>
     {/* la flèche suffit : pas de libellé, pas de titre */}

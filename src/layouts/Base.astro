@@ -2,6 +2,8 @@
 import "../styles/global.css";
 import { getEntry } from "astro:content";
 import { ClientRouter } from "astro:transitions";
+import { abs } from "../lib/seo";
+import { image as manifestImage } from "../lib/images";
 
 interface Props {
   title?: string;
@@ -9,11 +11,20 @@ interface Props {
   /* Chemin canonique de la page (`/`, `/menu`…), résolu contre `site` de astro.config. */
   path?: string;
   lang?: string;
+  /* Image de partage (chemin absolu du site, ex. `/assets/…`) ; repli : première photo d'accueil. */
+  image?: string;
+  /* Données structurées : un objet ou une liste, chacun devient un <script ld+json>. */
+  ld?: object | object[];
+  /* Versions de la page dans d'autres langues, avec x-default. */
+  alternates?: { hreflang: string; path: string }[];
 }
 const site = (await getEntry("site", "site"))!.data;
 const NAME = "Vania Jaikin Miyazaki";
-const { title = NAME, description = site.description, path = Astro.url.pathname, lang = "fr" } = Astro.props;
+const { title = NAME, description = site.description, path = Astro.url.pathname, lang = "fr", image, ld, alternates } = Astro.props;
 const canonical = new URL(path, Astro.site).href;
+const photo = (await getEntry("accueil", "accueil"))!.data.photos[0];
+const ogImage = abs(image ?? (photo && manifestImage(photo)?.src) ?? "/assets/brand/nom-manuscrit.png");
+const lds = [ld ?? []].flat().map((o) => JSON.stringify({ "@context": "https://schema.org", ...o }).replace(/</g, "\\u003c"));
 
 // Newsreader et Manrope servent partout ; la police du menu s'y ajoute si c'en est une autre.
 const menuFont = site.policeMenu;
@@ -32,8 +43,15 @@ const fonts = `https://fonts.googleapis.com/css2?${menuFamily}family=Manrope:wgh
     <meta property="og:title" content={title} />
     <meta property="og:description" content={description} />
     <meta property="og:site_name" content={NAME} />
-    <meta property="og:locale" content="fr_CH" />
+    <meta property="og:locale" content={lang === "en" ? "en_US" : "fr_CH"} />
     <meta property="og:url" content={canonical} />
+    <meta property="og:image" content={ogImage} />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content={title} />
+    <meta name="twitter:description" content={description} />
+    <meta name="twitter:image" content={ogImage} />
+    {alternates?.map((a) => <link rel="alternate" hreflang={a.hreflang} href={abs(a.path)} />)}
+    {lds.map((j) => <script type="application/ld+json" set:html={j} />)}
     <link rel="icon" href="/assets/brand/favicon.svg" type="image/svg+xml" />
     <link rel="icon" href="/assets/brand/favicon-32.png" sizes="32x32" type="image/png" />
     <link rel="icon" href="/assets/brand/favicon-16.png" sizes="16x16" type="image/png" />

@@ -5,6 +5,7 @@ import Header from "../../components/Header.astro";
 import Page from "../../components/Page.astro";
 import BackLink from "../../components/BackLink.astro";
 import { renderMarkdown } from "../../lib/content";
+import { abs, describe, person } from "../../lib/seo";
 
 export async function getStaticPaths() {
   return (await getCollection("lecture")).filter((t) => t.data.publie).map((texte) => ({ params: { id: texte.id }, props: { texte } }));
@@ -12,7 +13,11 @@ export async function getStaticPaths() {
 const { texte } = Astro.props;
 const t = texte.data;
 ---
-<Base title={`${t.titre} — Vania Jaikin Miyazaki`} path={`/lecture/${texte.id}`}>
+<Base title={`${t.titre} — Vania Jaikin Miyazaki`} path={`/lecture/${texte.id}`} description={describe(t.vignette.extrait, t.contexte)}
+  ld={{
+    "@type": "Article", headline: t.titre, description: describe(t.vignette.extrait, t.contexte), inLanguage: "fr",
+    url: abs(`/lecture/${texte.id}`), mainEntityOfPage: abs(`/lecture/${texte.id}`), author: await person(),
+  }}>
   <Header />
   <Page variant="prose">
     <BackLink href="/lecture" label="retour au coin lecture" />

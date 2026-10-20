@@ -8,6 +8,7 @@ import Popup from "../../components/Popup.astro";
 import AudioPlayer from "../../islands/AudioPlayer.jsx";
 import Playlists from "../../islands/Playlists.jsx";
 import { asset, playlistEmbed, renderMarkdown } from "../../lib/content";
+import { abs, describe } from "../../lib/seo";
 
 export async function getStaticPaths() {
   const albums = await getCollection("albums");
@@ -19,7 +20,15 @@ const episodes = a.episodes?.length ? a.episodes.map((e) => ({ ...e, src: asset(
 const playlists = (a.playlists ?? []).filter((p) => p.url)
   .map((p) => ({ ...p, ...(playlistEmbed(p) || { embed: null, hauteur: null }) }));
 ---
-<Base title={`${a.titre} — Vania Jaikin Miyazaki`} path={`/films/${album.id}`}>
+<Base title={`${a.titre} — Vania Jaikin Miyazaki`} path={`/films/${album.id}`} description={describe(a.resume)}
+  ld={[
+    { "@type": "PodcastSeries", "@id": abs(`/films/${album.id}`), name: a.titre, url: abs(`/films/${album.id}`), description: describe(a.resume), inLanguage: "fr" },
+    ...(a.episodes ?? []).map((e) => ({
+      "@type": "PodcastEpisode", name: e.title, episodeNumber: e.id, url: abs(`/films/${album.id}`),
+      timeRequired: `PT${e.sec}S`, partOfSeries: { "@id": abs(`/films/${album.id}`) },
+      associatedMedia: { "@type": "AudioObject", contentUrl: abs(asset(e.src)) },
+    })),
+  ]}>
   <Header />
   <Page>
     <BackLink href="/films" label="Films pour les oreilles" />

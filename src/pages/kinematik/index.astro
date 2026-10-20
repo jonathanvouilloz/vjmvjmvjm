@@ -6,6 +6,7 @@ import Page from "../../components/Page.astro";
 import BackLink from "../../components/BackLink.astro";
 import { filmUrl, seededRandom as rnd } from "../../lib/content";
 import { kinematikImage } from "../../lib/images";
+import { itemList } from "../../lib/seo";
 
 /* Les vignettes Vimeo sont toutes en 16/9 ; les carrés et verticaux sont des recadrages en
    `object-fit: cover`. Tout est tiré de `seededRandom(i)` : même agencement à chaque visite. */
@@ -24,7 +25,8 @@ const vars = (i: number) => {
   ].join(";");
 };
 ---
-<Base title="Kinematik — Vania Jaikin Miyazaki" path="/kinematik">
+<Base title="Kinematik — Vania Jaikin Miyazaki" path="/kinematik"
+  ld={{ ...itemList(films.map((f) => ({ name: f.data.titre, url: filmUrl(f) }))), name: "Kinematik" }}>
   <Header />
   <Page>
     <BackLink href="/menu" />

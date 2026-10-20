@@ -5,6 +5,7 @@ import Page from "../../components/Page.astro";
 import BackLink from "../../components/BackLink.astro";
 import { carnetsAll } from "../../lib/carnets";
 import { seededRandom as rnd } from "../../lib/content";
+import { abs } from "../../lib/seo";
 
 const carnets = await carnetsAll();
 // Rotation, décalage, cadre et marge intérieure : tirés de l'index, donc identiques à chaque visite.
@@ -13,7 +14,8 @@ const vars = (i: number) => [
   `--cadre:${rnd(i + 150) > 0.65 ? "1px solid var(--fg-subtle)" : "none"}`, `--pad:${rnd(i + 200) > 0.7 ? 6 : 0}px`,
 ].join(";");
 ---
-<Base title="Carnets de voyages — Vania Jaikin Miyazaki" path="/carnets">
+<Base title="Carnets de voyages — Vania Jaikin Miyazaki" path="/carnets"
+  ld={{ "@type": "ImageGallery", name: "Carnets de voyages", url: abs("/carnets"), image: carnets.map((c) => ({ "@type": "ImageObject", contentUrl: abs(c.img.src), ...(c.title && { name: c.title }) })) }}>
   <Header />
   <Page>
     <BackLink href="/menu" />

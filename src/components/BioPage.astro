@@ -9,6 +9,7 @@ import Blocks from "../components/Blocks.astro";
 import Popup from "../components/Popup.astro";
 import { asset } from "../lib/content";
 import { image } from "../lib/images";
+import { abs, describe, person } from "../lib/seo";
 
 interface Props { lang: "fr" | "en" }
 const { lang } = Astro.props;
@@ -20,7 +21,9 @@ const portraits = bio.portraits.map(asset);
 const portrait = bio.portraits[0] ? image(bio.portraits[0]) : null;
 const langs = [{ code: "fr", label: "FR", href: "/bio" }, { code: "en", label: "EN", href: "/en/bio" }];
 ---
-<Base lang={lang} title="Bio — Vania Jaikin Miyazaki" path={lang === "en" ? "/en/bio" : "/bio"}>
+<Base lang={lang} title="Bio — Vania Jaikin Miyazaki" path={lang === "en" ? "/en/bio" : "/bio"} description={describe(textes.pro)}
+  alternates={[{ hreflang: "fr", path: "/bio" }, { hreflang: "en", path: "/en/bio" }, { hreflang: "x-default", path: "/bio" }]}
+  ld={{ "@type": "ProfilePage", url: abs(lang === "en" ? "/en/bio" : "/bio"), inLanguage: lang, mainEntity: await person() }}>
   <Header />
   <Page>
     <div class="grille">

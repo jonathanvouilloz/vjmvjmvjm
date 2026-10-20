@@ -5,10 +5,12 @@ import Header from "../../components/Header.astro";
 import Page from "../../components/Page.astro";
 import BackLink from "../../components/BackLink.astro";
 import Popup from "../../components/Popup.astro";
+import { itemList } from "../../lib/seo";
 
 const albums = await getCollection("albums");
 ---
-<Base title="Films pour les oreilles — Vania Jaikin Miyazaki" path="/films">
+<Base title="Films pour les oreilles — Vania Jaikin Miyazaki" path="/films"
+  ld={{ ...itemList(albums.map((a) => ({ name: a.data.titre, url: `/films/${a.id}` }))), name: "Films pour les oreilles" }}>
   <Header />
   <Page>
     <BackLink href="/menu" />

@@ -274,8 +274,7 @@ test('the static page is findable by name', () => {
   assert.match(source, /"@type": "Person"/);
   assert.match(source, /"name": "Vania Jaikin Miyazaki"/);
   assert.match(source, /<h1>Vania Jaikin Miyazaki<\/h1>/);
-  assert.match(read('public/robots.txt'), /Sitemap: https:\/\/vjmvjmvjm\.com\/sitemap\.xml/);
-  assert.match(read('public/sitemap.xml'), /<loc>https:\/\/vjmvjmvjm\.com\/<\/loc>/);
+  assert.match(read('public/robots.txt'), /Sitemap: https:\/\/vjmvjmvjm\.com\/sitemap-index\.xml/);
 });
 
 test('rich text turns a lone video URL into a player and a lone image into a figure', async () => {
