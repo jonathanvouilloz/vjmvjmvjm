@@ -1,7 +1,7 @@
 /* Le collage /carnets et les pages /carnets/{slug} (Tâche 6) partent de la même liste ordonnée. */
 import path from "node:path";
 import { getCollection, getEntry } from "astro:content";
-import { seededRandom } from "./content";
+import { seededRandom } from "./random";
 import { image, type Img } from "./images";
 
 export type Carnet = { path: string; slug: string; title?: string; img: Img };

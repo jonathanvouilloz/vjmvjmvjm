@@ -2,7 +2,7 @@
 /* Contenu d'une pop-up, rendu en dur dans un <template> ; src/scripts/popups.ts l'ouvre au clic.
    Carte à contour dessiné, légèrement penchée, comme l'ancien `Popup sketch`. */
 import SketchFrame from "./SketchFrame.astro";
-import { seededRandom } from "../lib/content";
+import { seededRandom } from "../lib/random";
 
 interface Props { id: string; seed?: number; maxWidth?: number; label: string }
 const { id, seed = 1, maxWidth = 880, label } = Astro.props;

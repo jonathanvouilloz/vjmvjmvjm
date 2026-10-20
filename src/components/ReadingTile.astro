@@ -2,7 +2,8 @@
 /* Vignette du Coin lecture : taille, décalage et inclinaison tirés de `seededRandom` (même
    mise en page à chaque visite), en deux jeux de valeurs — bureau et mobile (≤ 760px). */
 import SketchFrame from "./SketchFrame.astro";
-import { asset, seededRandom as rnd, typo } from "../lib/content";
+import { asset, typo } from "../lib/content";
+import { seededRandom as rnd } from "../lib/random";
 import { image } from "../lib/images";
 
 interface Props { text: { id: string; data: any }; index: number }

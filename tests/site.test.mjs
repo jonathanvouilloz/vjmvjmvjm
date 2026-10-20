@@ -1,109 +1,45 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync, existsSync } from 'node:fs';
+import { readFileSync, existsSync, readdirSync } from 'node:fs';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
+import { stripTypeScriptTypes } from 'node:module';
 
 const root = new URL('../', import.meta.url);
-const read = (path) => readFileSync(new URL(path, root), 'utf8');
-const app = () => read('design-extract/site-minimalist-portoflio/project/waniushka-app.jsx');
-const components = () => read('design-extract/site-minimalist-portoflio/project/waniushka-components.jsx');
-const html = () => read('design-extract/site-minimalist-portoflio/project/Waniushka%20Portfolio.html');
-const buildScript = () => read('precompile.mjs');
+const read = (p) => readFileSync(new URL(p, root), 'utf8');
 const cutoutScript = () => read('tools/cutout-drawing.py');
 const packageManifest = () => JSON.parse(read('package.json'));
 const optimizeDistScript = () => read('tools/optimize-dist.py');
-const packageNetlifyScript = () => read('tools/package-netlify.py');
-const content = (path) => JSON.parse(read(`content/${path}`));
+// package.json est en commonjs : on retire les types de content.ts à la volée (Node ≥ 22.13) et on l'importe en module.
+const importContent = async () => {
+  const code = stripTypeScriptTypes(read('src/lib/content.ts'), { mode: 'strip' })
+    .replace('"marked"', JSON.stringify(import.meta.resolve('marked')));
+  return import(`data:text/javascript;base64,${Buffer.from(code).toString('base64')}`);
+};
+const content = (p) => JSON.parse(read(`content/${p}`));
+
+// Les tests sur dist/ lisent le site construit : `npm run build` d'abord. Sans dist/, ils sont
+// ignorés avec ce message, pour que `npm test` reste utilisable sur un clone neuf.
+const hasDist = existsSync(new URL('dist/index.html', root));
+const onDist = { skip: hasDist ? false : 'dist/ absent : lancer `npm run build` pour exécuter ce test' };
+const dist = (p) => read(`dist/${p}`);
+const sitemapPaths = () => [...dist('sitemap-0.xml').matchAll(/<loc>([^<]+)<\/loc>/g)].map((m) => new URL(m[1]).pathname);
+// Toutes les pages construites (les pages de lightbox des carnets ne sont pas dans le sitemap).
+const builtPaths = () => readdirSync(new URL('dist/', root), { recursive: true })
+  .filter((f) => f.endsWith('.html') && !f.startsWith('admin'))
+  .map((f) => '/' + f.replaceAll(path.sep, '/').replace(/\.html$/, '').replace(/^index$/, ''));
+// `/lecture/ma-mere` → dist/lecture/ma-mere.html ; `/` → dist/index.html
+const pageFile = (pathname) => (pathname === '/' ? 'index.html' : `${pathname.slice(1).replace(/\/$/, '')}.html`);
 
 test('the public contact data uses the confirmed address and a bare IBAN', () => {
   const site = content('site.json');
   assert.equal(site.email, 'vania@vjmvjmvjm.com');
   assert.match(site.iban, /^CH\d{2}/);
-  assert.doesNotMatch(app(), /Pour faire des cadeaux/);
-  assert.match(app(), /\{BIO\.iban\}/);
 });
 
-test('the header visual marks scale together without crowding mobile controls', () => {
-  const shared = components();
-  assert.match(app(), /const isCompact = useMediaQuery\('\(max-width: 480px\)'\)/);
-  assert.doesNotMatch(app(), /!isCompact && <IconButton onClick=\{onHome\}/);
-  assert.match(app(), /left:\s*isMobile\s*\?\s*'55%'\s*:\s*'50%'/);
-  assert.match(app(), /<IconButton onClick=\{onHome\}[^>]*>\s*<IconHome \/>\s*<\/IconButton>\s*<IconButton onClick=\{onStar\}/s);
-  assert.match(app(), /isCompact\s*\?\s*'clamp\(72px, 22\.5vw, 110px\)'/);
-  assert.match(app(), /isMobile\s*\?\s*'clamp\(100px, 20vw, 136px\)'/);
-  assert.match(app(), /'clamp\(180px, 20vw, 250px\)'/);
-  assert.match(app(), /height:\s*'auto'/);
-  assert.match(shared, /function IconHome\(\{ size = 29 \}\)/);
-  assert.match(shared, /function IconMountain\(\{ size = 36 \}\)/);
-  assert.match(shared, /function IconStar\(\{ size = 27 \}\)/);
-  assert.match(shared, /function IconMenu\(\{ size = 29,/);
-  assert.match(shared, /nav-sun\.svg'\}\s*size=\{27\}/);
-  assert.match(shared, /opacity:\s*active\s*\|\|\s*hov\s*\?\s*1\s*:\s*0\.85/);
-  assert.match(shared, /opacity:\s*hov\s*\?\s*1\s*:\s*0\.85/);
-});
-
-test('the menu maps cameras, ear spirals and eyes to the confirmed sections', () => {
-  const source = app();
-  assert.match(source, /kinematik:\s*\{[^}]*sigle-camera-1\.svg[^}]*sigle-camera-2\.svg/s);
-  assert.match(source, /films:\s*\{[^}]*sigle-spirale-1\.svg[^}]*sigle-spirale-2\.svg/s);
-  assert.match(source, /carnets:\s*\{[^}]*nav-eye-left\.svg[^}]*nav-eye-right\.svg/s);
-  assert.match(source, /function Sigle\(\{ id, flip = false, size = '0\.8em', opacity = 0\.75 \}\)/);
-});
-
-test('Coin lecture shows a collage of texts that open full-frame', () => {
-  const source = app();
-  assert.match(source, /lecture:\s*\{[^}]*sigle-etoile-1\.svg[^}]*sigle-etoile-2\.svg/s);
-  assert.match(source, /\{ id: 'lecture', label: 'Coin lecture' \}/);
-  assert.match(source, /function ReadingPage\(\{ onBack, onOpenText \}\)/);
-  // la flèche seule vers le menu, la flèche + libellé vers le coin lecture
-  assert.match(source, /function ReadingPage[\s\S]*?<BackLink onClick=\{onBack\} \/>/);
-  assert.match(source, /<BackLink label="retour au coin lecture"/);
-  assert.match(source, /case 'texte':/);
-  assert.match(source, /id=\{`note-\$\{i \+ 1\}`\}/);
-});
-
-test('the alea uses a dedicated full-screen overlay instead of Popup', () => {
-  const source = app();
-  assert.match(source, /function FullscreenAleaOverlay/);
-  assert.match(source, /aleas\s*&&\s*\(\s*<FullscreenAleaOverlay/s);
-  assert.doesNotMatch(source, /aleas\s*&&\s*\(\s*\/\*[\s\S]*?<Popup/s);
-  assert.match(source, /prefers-reduced-motion/);
-});
-
-test('the static HTML declares Netlify form detection and favicons', () => {
-  const source = html();
-  assert.match(source, /rel="icon"[^>]*href="assets\/brand\/favicon\.svg"/);
-  assert.match(source, /rel="apple-touch-icon"[^>]*href="assets\/brand\/apple-touch-icon\.png"/);
-  assert.match(source, /form[^>]*name="contact"[^>]*data-netlify="true"/);
-  assert.match(source, /input[^>]*type="file"[^>]*name="dessin"/);
-  assert.match(source, /<link rel="canonical" href="https:\/\/vjmvjmvjm\.com\/">/);
-});
-
-test('the React contact form exports the canvas PNG and posts multipart data', () => {
-  const source = app();
-  assert.match(source, /toBlob\(/);
-  assert.match(source, /new FormData\(/);
-  assert.match(source, /formData\.append\(['"]dessin['"]/);
-  assert.match(source, /MAX_EXPORT_PIXELS\s*=\s*2_000_000/);
-  assert.match(source, /fetch\(['"]\/['"],\s*\{[\s\S]*method:\s*['"]POST['"]/);
-  assert.match(source, /aria-live="polite"/);
-});
-
-test('the episode play marker is an SVG rather than a text glyph', () => {
-  const source = components();
-  assert.match(source, /function TrackPlayIcon/);
-  assert.doesNotMatch(source, />▶<\/span>/);
-});
-
-test('the latest ink wordmark generates the handwritten header name', () => {
-  const source = cutoutScript();
-  assert.match(source, /selected_piece\("VJM_encre\.jpg",\s*"nom-manuscrit"/);
-  assert.match(source, /\(40,\s*60,\s*2370,\s*540\)/);
-  assert.doesNotMatch(source, /selected_signature\("VJM_MAJ\.jpg",\s*"nom-manuscrit"/);
-  assert.doesNotMatch(source, /selected_signature\("Nom_Maj_remplacer le M de Miyazaki\.jpeg",\s*"nom-manuscrit"/);
-  assert.doesNotMatch(source, /whole\(SIGLES \/ "VJM_3\.jpeg", OUT \/ "nom-manuscrit\.png"\)/);
+test('the dist contact page prints the IBAN', onDist, () => {
+  assert.ok(dist('contact.html').includes(content('site.json').iban));
 });
 
 test('the generated brand asset set is complete', () => {
@@ -126,29 +62,6 @@ test('the generated brand asset set is complete', () => {
   }
 });
 
-test('the supplied vector sigles replace raster UI marks and remain individually available', () => {
-  const ui = app();
-  const shared = components();
-  assert.doesNotMatch(ui, /(?:sigle-camera|sigle-spirale|nav-eye-(?:left|right)|info-album-)\S*\.png/);
-  assert.doesNotMatch(shared, /nav-(?:home|moon|sun|star|mountains)\.png/);
-  assert.match(ui, /sigle-camera-1\.svg/);
-  assert.match(ui, /sigle-spirale-1\.svg/);
-  assert.match(ui, /nav-eye-left\.svg/);
-  assert.match(ui, /info-album-\$\{Math\.min\(index \+ 1, 3\)\}\.svg/);
-
-  for (const path of [
-    'nav-star.svg', 'nav-home.svg', 'nav-moon.svg', 'nav-mountains.svg', 'nav-sun.svg',
-    'sigle-camera-1.svg', 'sigle-camera-2.svg',
-    'sigle-vague-1.svg', 'sigle-vague-2.svg',
-    ...Array.from({ length: 5 }, (_, i) => `sigle-spirale-${i + 1}.svg`),
-    ...Array.from({ length: 5 }, (_, i) => `sigle-etoile-${i + 1}.svg`),
-    ...Array.from({ length: 5 }, (_, i) => `info-album-${i + 1}.svg`),
-    'nav-eye-left.svg', 'nav-eye-middle.svg', 'nav-eye-right.svg',
-  ]) {
-    assert.equal(existsSync(new URL(`public/assets/brand/${path}`, root)), true, `${path} should exist`);
-  }
-});
-
 test('the three lighter header drawings are emboldened without thickening the moon', () => {
   const source = read('tools/import-vector-sigles.py');
   assert.match(source, /"nav-home\.svg":\s*\([^\n]*stroke_width/);
@@ -157,58 +70,13 @@ test('the three lighter header drawings are emboldened without thickening the mo
   assert.doesNotMatch(source, /"nav-moon\.svg":\s*\([^\n]*stroke_width/);
 });
 
-test('the production build keeps SRI for the pinned React bundles', () => {
-  const source = buildScript();
-  assert.match(source, /const REACT_PROD_SRI = "sha384-[^"]+"/);
-  assert.match(source, /const REACT_DOM_PROD_SRI = "sha384-[^"]+"/);
-  assert.doesNotMatch(source, /replace\(\/integrity=/);
-});
-
-test('the production build creates bounded web audio without changing canonical masters', () => {
-  assert.equal(
-    packageManifest().scripts.build,
-    'python tools/import-vector-sigles.py && node tools/build-images.mjs && astro build && python tools/optimize-dist.py',
-  );
-  const source = optimizeDistScript();
-  assert.match(source, /AUDIO_BITRATE\s*=\s*"48k"/);
-  assert.match(source, /DIST\s*=\s*ROOT\s*\/\s*"dist"/);
-  assert.match(source, /duration_delta/);
-  assert.match(source, /os\.replace\(/);
-});
-
-test('Netlify packages are immutable numbered release candidates', () => {
-  const source = packageNetlifyScript();
-  assert.match(source, /waniushka-netlify-rc\{rc\}\.zip/);
-  assert.match(source, /ZipFile\(OUT,\s*"x"/);
-  assert.match(source, /max\(existing,\s*default=0\)\s*\+\s*1/);
-});
-
-test('the build turns content/ into window.CONTENT with rendered Markdown and footnotes', async () => {
-  const { loadContent, renderMarkdown } = await import('../tools/build-content.mjs');
-  const data = loadContent(new URL('../content', import.meta.url).pathname.replace(/^\/(\w:)/, '$1'));
-  assert.ok(data.kinematik.length >= 12);
-  assert.ok(data.lecture.some((t) => t.id === 'ma-mere'));
-  const text = data.lecture.find((t) => t.id === 'ma-mere');
-  assert.match(text.corpsHtml, /<p>/);
-  assert.match(text.corpsHtml, /<figure><img src="assets\/home\/024-oiseau-de-feu\.jpg" alt="Oiseau de feu" loading="lazy">/);
-  assert.match(text.corpsHtml, /<a href="#note-1" id="ref-1"/);
-  assert.match(text.notes[0].html, /Volodia/);
-  assert.match(renderMarkdown('[x](https://a.ch)'), /target="_blank" rel="noopener noreferrer"/);
-  assert.match(renderMarkdown('« oui » ?'), /« oui » \?/);
-  assert.match(buildScript(), /window\.CONTENT = /);
-  assert.match(buildScript(), /copyDir\("admin"/);
-});
-
-test('components read editable data and render shared content blocks', () => {
-  const shared = components();
-  assert.match(shared, /const CONTENT = window\.CONTENT;/);
-  assert.match(shared, /function Blocks\(\{ blocks/);
-  for (const type of ['text', 'image', 'video', 'audio', 'lien']) {
-    assert.match(shared, new RegExp(`case '${type}':`));
-  }
-  assert.doesNotMatch(shared, /PLACEHOLDER_IMAGES|FRAGMENTS_TEXT|function RichText/);
-  assert.match(shared, /function SketchFrame/);
-  assert.match(shared, /ReactDOM\.createPortal\(/);
+test('the latest ink wordmark generates the handwritten header name', () => {
+  const source = cutoutScript();
+  assert.match(source, /selected_piece\("VJM_encre\.jpg",\s*"nom-manuscrit"/);
+  assert.match(source, /\(40,\s*60,\s*2370,\s*540\)/);
+  assert.doesNotMatch(source, /selected_signature\("VJM_MAJ\.jpg",\s*"nom-manuscrit"/);
+  assert.doesNotMatch(source, /selected_signature\("Nom_Maj_remplacer le M de Miyazaki\.jpeg",\s*"nom-manuscrit"/);
+  assert.doesNotMatch(source, /whole\(SIGLES \/ "VJM_3\.jpeg", OUT \/ "nom-manuscrit\.png"\)/);
 });
 
 test('the CMS schema covers every content file', () => {
@@ -221,93 +89,9 @@ test('the CMS schema covers every content file', () => {
   assert.match(read('public/admin/index.html'), /@sveltia\/cms/);
 });
 
-test('the star opens the singular Aléa du jour', () => {
-  assert.match(app(), /title="Aléa du jour"/);
-  assert.doesNotMatch(app(), /Aléas du jour/);
-});
-
-test('menu titles use the configurable Open Sans face', () => {
-  assert.match(html(), /family=Open\+Sans:/);
-  assert.match(html(), /--font-menu: 'Open Sans'/);
-  assert.match(app(), /fontFamily: 'var\(--font-menu\)'/);
-  assert.equal(content('site.json').policeMenu, 'Open Sans');
-  assert.match(buildScript(), /policeMenu/);
-});
-
-test('the menu page carries the cursor dot field, off for touch and reduced motion', () => {
-  const source = app();
-  assert.match(source, /function DotField\(\)/);
-  assert.match(source, /<DotField \/>/);
-  assert.match(source, /\(pointer: coarse\)/);
-  assert.match(source, /cancelAnimationFrame\(raf\)/);
-});
-
-test('the bio swaps texts, switches FR/EN and hides the eye on demand', () => {
-  const source = app();
-  const bio = content('bio.json');
-  assert.match(bio.fr.pro[0].md, /^Vania Jaikin Miyazaki est réalisatrice/);
-  assert.match(bio.fr.perso[0].md, /^La vérité c’est que VJM/);
-  assert.ok(bio.en.pro.length && bio.en.perso.length);
-  assert.match(source, /function LangSwitch/);
-  assert.match(source, /nav-eye-middle\.svg/);
-  assert.match(source, /BIO\.bioOeilVisible &&/);
-  assert.doesNotMatch(source, /biofilmo/);
-});
-
-test('news only shows when active and within its dates', () => {
-  const shared = components();
-  assert.match(shared, /function activeNews/);
-  assert.match(shared, /n\.actif && \(!n\.debut \|\| n\.debut <= d\) && \(!n\.fin \|\| d <= n\.fin\)/);
-  assert.match(app(), /function NewsTag/);
-  assert.equal(content('news.json').news.every((n) => typeof n.actif === 'boolean'), true);
-});
-
-test('Kinematik tiles carry an exceptional mention and the lightbox a synopsis toggle', () => {
-  assert.match(app(), /v\.mention &&/);
-  assert.match(components(), /aria-label=\{infoOpen \? 'Masquer le résumé' : 'Résumé et générique'\}/);
-  const film = content('kinematik.json').films[0];
-  assert.ok('mention' in film && 'resume' in film && 'generique' in film);
-});
-
-test('the static page is findable by name', () => {
-  const source = html();
-  assert.match(source, /"@type": "Person"/);
-  assert.match(source, /"name": "Vania Jaikin Miyazaki"/);
-  assert.match(source, /<h1>Vania Jaikin Miyazaki<\/h1>/);
-  assert.match(read('public/robots.txt'), /Sitemap: https:\/\/vjmvjmvjm\.com\/sitemap-index\.xml/);
-});
-
-test('rich text turns a lone video URL into a player and a lone image into a figure', async () => {
-  const { renderMarkdown, videoEmbed } = await import('../tools/build-content.mjs');
-  assert.equal(videoEmbed('https://vimeo.com/298725112/5a560bc308'), 'https://player.vimeo.com/video/298725112?h=5a560bc308');
-  assert.equal(videoEmbed('https://youtu.be/abc123'), 'https://www.youtube-nocookie.com/embed/abc123');
-  assert.equal(videoEmbed('https://example.com/x'), null);
-  const out = renderMarkdown('Avant\n\nhttps://www.youtube.com/watch?v=abc123&t=3\n\n![Oiseau](a.jpg "Légende")');
-  assert.match(out, /<figure class="vjm-video"><iframe src="https:\/\/www\.youtube-nocookie\.com\/embed\/abc123"/);
-  assert.match(out, /<figure><img src="a\.jpg" alt="Oiseau" loading="lazy"><figcaption>Légende<\/figcaption><\/figure>/);
-  // un lien dans une phrase reste un lien
-  assert.match(renderMarkdown('Voir https://vimeo.com/1 ici'), /<a href="https:\/\/vimeo\.com\/1"/);
-});
-
-test('playlist URLs become embedded players when the platform allows it', async () => {
-  const { playlistEmbed } = await import('../tools/build-content.mjs');
-  const e = (plateforme, url) => playlistEmbed({ plateforme, url })?.embed ?? null;
-  assert.equal(e('spotify', 'https://open.spotify.com/show/4qmj0UuzPkLPpDFqxgd2MY'),
-    'https://open.spotify.com/embed/show/4qmj0UuzPkLPpDFqxgd2MY?utm_source=generator&theme=0');
-  assert.equal(e('spotify', 'https://open.spotify.com/embed/playlist/abc'),
-    'https://open.spotify.com/embed/playlist/abc?utm_source=generator&theme=0');
-  assert.equal(e('apple-music', 'https://music.apple.com/fr/playlist/x/pl.123'), 'https://embed.music.apple.com/fr/playlist/x/pl.123');
-  assert.equal(e('apple-podcasts', 'https://podcasts.apple.com/fr/podcast/x/id1'), 'https://embed.podcasts.apple.com/fr/podcast/x/id1');
-  assert.equal(e('deezer', 'https://www.deezer.com/fr/playlist/908622995'), 'https://widget.deezer.com/widget/auto/playlist/908622995');
-  assert.equal(e('youtube', 'https://www.youtube.com/playlist?list=PLx'), 'https://www.youtube-nocookie.com/embed/videoseries?list=PLx');
-  assert.match(e('soundcloud', 'https://soundcloud.com/a/sets/b'), /^https:\/\/w\.soundcloud\.com\/player\/\?url=https%3A%2F%2Fsoundcloud\.com%2Fa%2Fsets%2Fb/);
-  assert.equal(e('bandcamp', 'https://x.bandcamp.com/album/y'), null);
-  assert.equal(e('spotify', 'pas une url'), null);
-});
-
 test('albums carry a short summary, playlists and a rich page text', async () => {
-  const { loadContent } = await import('../tools/build-content.mjs');
-  const data = loadContent(new URL('../content', import.meta.url).pathname.replace(/^\/(\w:)/, '$1'));
+  const { playlistEmbed } = await importContent();
+  const data = { albums: content('albums.json').albums };
   for (const album of data.albums) {
     assert.ok(!('infos' in album) && !('spotify' in album), `${album.id} garde l'ancien schéma`);
     assert.ok((album.resume || '').length <= 300, `${album.id} : résumé trop long`);
@@ -315,40 +99,7 @@ test('albums carry a short summary, playlists and a rich page text', async () =>
   }
   const coquillages = data.albums.find((a) => a.id === 'coquillages');
   assert.equal(coquillages.playlists[0].plateforme, 'spotify');
-  assert.match(coquillages.playlists[0].embed, /open\.spotify\.com\/embed\/show\//);
-  assert.match(app(), /function Playlists\(/);
-  assert.match(app(), /a\.resume && <button/);
-  assert.match(app(), /\{infoAlbumObj\.resume\}/);
-});
-
-test('the CMS schema bounds short texts and offers title, excerpt or image vignettes', () => {
-  const config = read('public/admin/config.yml');
-  for (const name of ['resume', 'extrait', 'information']) {
-    assert.match(config, new RegExp(`name: ${name},.*maxlength: 300`), `${name} limité à 300`);
-  }
-  assert.match(config, /name: corps\s+label: Texte\s+widget: markdown/);
-  assert.match(config, /name: contenu\s+label: "Texte de la page"\s+widget: markdown/);
-  assert.match(config, /name: playlists[\s\S]*name: plateforme[\s\S]*name: langue[\s\S]*name: url/);
-  assert.match(config, /label: "Une image", value: image/);
-  assert.match(app(), /v\.type === 'image' && v\.image/);
-  const text = content('lecture/ma-mere.json');
-  assert.ok(!('blocks' in text) && typeof text.corps === 'string');
-});
-
-test('every image list of the site is editable in the CMS', () => {
-  const config = read('public/admin/config.yml');
-  for (const file of ['carnets', 'accueil', 'aleas']) {
-    assert.ok(config.includes(`file: content/${file}.json`), `${file} absent du CMS`);
-  }
-  assert.match(config, /name: portraits[\s\S]*widget: image/);
-  assert.match(config, /name: vignette, label: "Image de la vignette", widget: image/);
-  assert.match(config, /name: description, label:/);
-  assert.equal(content('carnets.json').carnets.length, 53);
-  assert.equal(content('accueil.json').photos.length, 64);
-  assert.equal(content('aleas.json').aleas.length, 24);
-  assert.equal(content('bio.json').portraits.length, 15);
-  assert.ok(content('kinematik.json').films.every((f) => f.vignette));
-  assert.ok(!existsSync(new URL('design-extract/site-minimalist-portoflio/project/waniushka-assets.jsx', root)));
+  assert.match(playlistEmbed(coquillages.playlists[0]).embed, /open\.spotify\.com\/embed\/show\//);
 });
 
 test('build-images sizes uploads, makes thumbnails and skips missing files', async () => {
@@ -396,33 +147,203 @@ test('build-images sizes uploads, makes thumbnails and skips missing files', asy
   fs.rmSync(tmp, { recursive: true, force: true });
 });
 
-test('Kinematik tiles show an optional information behind a small i', () => {
-  const source = app();
-  assert.match(source, /\{v\.information && \(\s*<button/);
-  assert.match(source, /e\.stopPropagation\(\); setInfoPinned/);
-  assert.match(source, /e\.pointerType === 'mouse'/);
-  assert.ok(content('kinematik.json').films.every((f) => typeof f.information === 'string'));
-});
-
-test('footnotes are set a step smaller than the text', () => {
-  assert.match(html(), /\.vjm-notes \{[^}]*font-size: 0\.72em/);
-  assert.match(html(), /\.fn-ref \{ font-size: 0\.6em/);
-});
-
-// Sitemap et canoniques doivent écrire chaque URL pareil (sans barre finale), sinon Google en voit deux.
-test('every sitemap URL equals the canonical of its built page', { skip: !existsSync(new URL('dist/sitemap-0.xml', root)) }, () => {
-  const locs = [...read('dist/sitemap-0.xml').matchAll(/<loc>([^<]+)<\/loc>/g)].map((m) => m[1]);
-  assert.ok(locs.length > 0);
-  for (const loc of locs) {
-    const { pathname } = new URL(loc);
-    const page = read(`dist/${pathname === '/' ? 'index' : pathname.slice(1)}.html`);
-    assert.equal(page.match(/rel="canonical" href="([^"]+)"/)?.[1], loc);
+test('the supplied vector sigles remain individually available', () => {
+  for (const name of [
+    'nav-star.svg', 'nav-home.svg', 'nav-moon.svg', 'nav-mountains.svg', 'nav-sun.svg',
+    'sigle-camera-1.svg', 'sigle-camera-2.svg',
+    'sigle-vague-1.svg', 'sigle-vague-2.svg',
+    ...Array.from({ length: 5 }, (_, i) => `sigle-spirale-${i + 1}.svg`),
+    ...Array.from({ length: 5 }, (_, i) => `sigle-etoile-${i + 1}.svg`),
+    ...Array.from({ length: 5 }, (_, i) => `info-album-${i + 1}.svg`),
+    'nav-eye-left.svg', 'nav-eye-middle.svg', 'nav-eye-right.svg',
+  ]) {
+    assert.equal(existsSync(new URL(`public/assets/brand/${name}`, root)), true, `${name} should exist`);
   }
 });
 
-test('a built Kinematik page declares a VideoObject with duration and a full uploadDate', { skip: !existsSync(new URL('dist/kinematik/k1.html', root)) }, () => {
-  const ld = JSON.parse(read('dist/kinematik/k1.html').match(/ld\+json">([^<]*)<\/script>/)[1]);
+test('the menu page maps cameras, ear spirals, stars and eyes to the sections', onDist, () => {
+  const menu = dist('menu.html');
+  for (const sigle of ['sigle-camera-1', 'sigle-camera-2', 'sigle-spirale-1', 'sigle-spirale-2', 'sigle-etoile-1', 'sigle-etoile-2', 'nav-eye-left', 'nav-eye-right']) {
+    assert.ok(menu.includes(`${sigle}.svg`), `${sigle}.svg absent de menu.html`);
+  }
+  assert.match(menu, /DotField/);
+});
+
+test('the production build creates bounded web audio without changing canonical masters', () => {
+  const { build, test: testScript } = packageManifest().scripts;
+  assert.equal(build, 'python tools/import-vector-sigles.py && node tools/build-images.mjs && astro build && python tools/optimize-dist.py');
+  assert.match(testScript, /site\.test\.mjs/);
+  const source = optimizeDistScript();
+  assert.match(source, /AUDIO_BITRATE\s*=\s*"48k"/);
+  assert.match(source, /DIST\s*=\s*ROOT\s*\/\s*"dist"/);
+  assert.match(source, /AUDIO_DIR\s*=\s*DIST\s*\/\s*"assets"/);
+  assert.match(source, /duration_delta/);
+  assert.match(source, /os\.replace\(/);
+});
+
+test('rendered Markdown covers footnotes, outbound links, typography, video players and figures', async () => {
+  const { renderMarkdown, videoEmbed } = await importContent();
+  assert.match(renderMarkdown('[x](https://a.ch)'), /target="_blank" rel="noopener noreferrer"/);
+  assert.match(renderMarkdown('« oui » ?'), /« oui » \?/);
+  assert.match(renderMarkdown('Note[^1]'), /<a href="#note-1" id="ref-1"/);
+  assert.equal(videoEmbed('https://vimeo.com/298725112/5a560bc308'), 'https://player.vimeo.com/video/298725112?h=5a560bc308');
+  assert.equal(videoEmbed('https://youtu.be/abc123'), 'https://www.youtube-nocookie.com/embed/abc123');
+  assert.equal(videoEmbed('https://example.com/x'), null);
+  const out = renderMarkdown(['Avant', 'https://www.youtube.com/watch?v=abc123&t=3', '![Oiseau](a.jpg "Légende")'].join('\n\n'));
+  assert.match(out, /<figure class="vjm-video"><iframe src="https:\/\/www\.youtube-nocookie\.com\/embed\/abc123"/);
+  assert.match(out, /<figure><img src="a\.jpg" alt="Oiseau" loading="lazy"><figcaption>Légende<\/figcaption><\/figure>/);
+  assert.match(renderMarkdown('![x](assets/home/a.jpg)'), /<img src="\/assets\/home\/a\.jpg"/);
+  // un lien dans une phrase reste un lien
+  assert.match(renderMarkdown('Voir https://vimeo.com/1 ici'), /<a href="https:\/\/vimeo\.com\/1"/);
+});
+
+test('playlist URLs become embedded players when the platform allows it', async () => {
+  const { playlistEmbed } = await importContent();
+  const e = (plateforme, url) => playlistEmbed({ plateforme, url })?.embed ?? null;
+  assert.equal(e('spotify', 'https://open.spotify.com/show/4qmj0UuzPkLPpDFqxgd2MY'),
+    'https://open.spotify.com/embed/show/4qmj0UuzPkLPpDFqxgd2MY?utm_source=generator&theme=0');
+  assert.equal(e('spotify', 'https://open.spotify.com/embed/playlist/abc'),
+    'https://open.spotify.com/embed/playlist/abc?utm_source=generator&theme=0');
+  assert.equal(e('apple-music', 'https://music.apple.com/fr/playlist/x/pl.123'), 'https://embed.music.apple.com/fr/playlist/x/pl.123');
+  assert.equal(e('apple-podcasts', 'https://podcasts.apple.com/fr/podcast/x/id1'), 'https://embed.podcasts.apple.com/fr/podcast/x/id1');
+  assert.equal(e('deezer', 'https://www.deezer.com/fr/playlist/908622995'), 'https://widget.deezer.com/widget/auto/playlist/908622995');
+  assert.equal(e('youtube', 'https://www.youtube.com/playlist?list=PLx'), 'https://www.youtube-nocookie.com/embed/videoseries?list=PLx');
+  assert.match(e('soundcloud', 'https://soundcloud.com/a/sets/b'), /^https:\/\/w\.soundcloud\.com\/player\/\?url=https%3A%2F%2Fsoundcloud\.com%2Fa%2Fsets%2Fb/);
+  assert.equal(e('bandcamp', 'https://x.bandcamp.com/album/y'), null);
+  assert.equal(e('spotify', 'pas une url'), null);
+});
+
+test('the CMS schema bounds short texts and offers title, excerpt or image vignettes', () => {
+  const config = read('public/admin/config.yml');
+  for (const name of ['resume', 'extrait', 'information']) {
+    assert.match(config, new RegExp(`name: ${name},.*maxlength: 300`), `${name} limité à 300`);
+  }
+  assert.match(config, /name: corps\s+label: Texte\s+widget: markdown/);
+  assert.match(config, /name: contenu\s+label: "Texte de la page"\s+widget: markdown/);
+  assert.match(config, /name: playlists[\s\S]*name: plateforme[\s\S]*name: langue[\s\S]*name: url/);
+  assert.match(config, /label: "Une image", value: image/);
+  const text = content('lecture/ma-mere.json');
+  assert.ok(!('blocks' in text) && typeof text.corps === 'string');
+});
+
+test('every image list of the site is editable in the CMS', () => {
+  const config = read('public/admin/config.yml');
+  for (const file of ['carnets', 'accueil', 'aleas']) {
+    assert.ok(config.includes(`file: content/${file}.json`), `${file} absent du CMS`);
+  }
+  assert.match(config, /name: portraits[\s\S]*widget: image/);
+  assert.match(config, /name: vignette, label: "Image de la vignette", widget: image/);
+  assert.match(config, /name: description, label:/);
+  assert.equal(content('carnets.json').carnets.length, 53);
+  assert.equal(content('accueil.json').photos.length, 64);
+  assert.equal(content('aleas.json').aleas.length, 24);
+  assert.equal(content('bio.json').portraits.length, 15);
+  assert.ok(content('kinematik.json').films.every((f) => f.vignette));
+});
+
+test('the bio carries both languages and the news have an on/off flag', () => {
+  const bio = content('bio.json');
+  assert.match(bio.fr.pro[0].md, /^Vania Jaikin Miyazaki est réalisatrice/);
+  assert.match(bio.fr.perso[0].md, /^La vérité c’est que VJM/);
+  assert.ok(bio.en.pro.length && bio.en.perso.length);
+  assert.equal(content('news.json').news.every((n) => typeof n.actif === 'boolean'), true);
+});
+
+test('Kinematik films carry a mention, a synopsis and an information text', () => {
+  const films = content('kinematik.json').films;
+  assert.ok('mention' in films[0] && 'resume' in films[0] && 'generique' in films[0]);
+  assert.ok(films.every((f) => typeof f.information === 'string'));
+});
+
+test('robots.txt points to the sitemap index', () => {
+  assert.match(read('public/robots.txt'), /Sitemap: https:\/\/vjmvjmvjm\.com\/sitemap-index\.xml/);
+});
+
+// --- dist/ : le site construit ---
+
+test('every sitemap URL has a built page whose canonical equals it', onDist, () => {
+  const locs = [...dist('sitemap-0.xml').matchAll(/<loc>([^<]+)<\/loc>/g)].map((m) => m[1]);
+  assert.ok(locs.length > 20);
+  for (const loc of locs) {
+    const file = pageFile(new URL(loc).pathname);
+    assert.ok(existsSync(new URL(`dist/${file}`, root)), `${file} manquant pour ${loc}`);
+    assert.equal(dist(file).match(/rel="canonical" href="([^"]+)"/)?.[1], loc);
+  }
+});
+
+test('every built page has a title, a description and valid JSON-LD', onDist, () => {
+  for (const pathname of sitemapPaths()) {
+    const page = dist(pageFile(pathname));
+    assert.match(page, /<title>[^<]+<\/title>/, `${pathname} : title`);
+    assert.match(page, /<meta name="description" content="[^"]+"/, `${pathname} : description`);
+    const blocks = [...page.matchAll(/ld\+json">([^<]*)<\/script>/g)];
+    assert.ok(blocks.length > 0, `${pathname} : JSON-LD absent`);
+    for (const [, json] of blocks) assert.doesNotThrow(() => JSON.parse(json), `${pathname} : JSON-LD invalide`);
+  }
+});
+
+test('the home page declares the Person and the favicons', onDist, () => {
+  const page = dist('index.html');
+  const person = JSON.parse(page.match(/ld\+json">([^<]*)<\/script>/)[1]);
+  assert.equal(person['@type'], 'Person');
+  assert.equal(person.name, 'Vania Jaikin Miyazaki');
+  assert.match(page, /rel="icon"[^>]*href="\/assets\/brand\/favicon\.svg"/);
+  assert.match(page, /rel="apple-touch-icon"[^>]*href="\/assets\/brand\/apple-touch-icon\.png"/);
+});
+
+test('no built page links to a missing file', onDist, () => {
+  const exists = (pathname) => [pathname, `${pathname}.html`, `${pathname}/index.html`]
+    .some((p) => { const f = new URL(`dist${p}`, root); return existsSync(f) && fs.statSync(f).isFile(); });
+  const site = 'https://vjmvjmvjm.com';
+  const broken = [];
+  for (const pathname of builtPaths()) {
+    const page = dist(pageFile(pathname));
+    for (const [, ref] of page.matchAll(/\s(?:href|src)="([^"]+)"/g)) {
+      if (/^(#|mailto:|tel:|data:|javascript:)/.test(ref)) continue;
+      const url = new URL(ref, site + pathname);
+      if (url.origin === site && !exists(decodeURIComponent(url.pathname))) broken.push(`${pathname} -> ${ref}`);
+    }
+  }
+  assert.deepEqual(broken, []);
+});
+
+test('the contact page has the Netlify form with its fields and drawing export', onDist, () => {
+  const page = dist('contact.html');
+  assert.match(page, /<form[^>]*name="contact"[^>]*data-netlify="true"/);
+  assert.match(page, /<input[^>]*name="form-name"[^>]*value="contact"/);
+  for (const field of ['nom', 'email', 'message', 'dessin']) assert.match(page, new RegExp(`name="${field}"`), field);
+  assert.match(page, /type="file"[^>]*name="dessin"/);
+  const source = read('src/pages/contact.astro');
+  assert.match(source, /toBlob\(/);
+  assert.match(source, /new FormData\(/);
+  assert.match(source, /MAX_EXPORT_PIXELS\s*=\s*2_000_000/);
+});
+
+test('a text page renders its body and footnotes, and the footnote style ships', onDist, () => {
+  const page = dist('lecture/ma-mere.html');
+  assert.match(page, /<figure><img src="\/?assets\/[^"]*oiseau-de-feu[^"]*" alt="Oiseau de feu" loading="lazy">/);
+  assert.match(page, /<a href="#note-1" id="ref-1"/);
+  assert.match(page, /id="note-1"/);
+  assert.match(page, /Volodia/);
+  const css = readdirSync(new URL('dist/_astro/', root)).filter((f) => f.endsWith('.css')).map((f) => dist(`_astro/${f}`)).join('');
+  assert.match(css, /\.vjm-notes\{[^}]*font-size:\.72em/);
+});
+
+test('a built Kinematik page declares a VideoObject with duration and a full uploadDate', onDist, () => {
+  const ld = JSON.parse(dist('kinematik/k1.html').match(/ld\+json">([^<]*)<\/script>/)[1]);
   assert.equal(ld['@type'], 'VideoObject');
   assert.match(ld.duration, /^PT(\d+H)?\d+M\d+S$/);
   assert.match(ld.uploadDate, /^\d{4}-\d{2}-\d{2}$/);
+});
+
+test('a lightbox page ships the close script', onDist, () => {
+  const src = dist('kinematik/k1.html').match(/src="(\/_astro\/Lightbox[^"]+\.js)"/)?.[1];
+  assert.ok(src, 'script Lightbox absent de la page');
+  assert.match(read(`dist${src}`), /history\.back\(\)/);
+});
+
+// Lightbox : la fermeture lit `history.state.index`, posé par le ClientRouter d'Astro (interne,
+// non documenté). Si une montée de version le renomme, ce test casse au lieu de la fermeture en silence.
+test('the Astro router still keeps its history index in history.state', () => {
+  assert.match(read('node_modules/astro/dist/transitions/router.js'), /index: currentHistoryIndex/);
 });

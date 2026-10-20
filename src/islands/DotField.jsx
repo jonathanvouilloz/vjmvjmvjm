@@ -3,12 +3,7 @@
    en mouvement réduit (le semis reste, immobile) ; pause quand l'onglet est caché.
    Le cleanup de l'effet retire RAF et écouteurs : l'île peut être démontée puis remontée. */
 import { useEffect, useRef } from 'react';
-
-// Même générateur que src/lib/content.ts (non importé : il tire du code Node dans le bundle navigateur).
-const seededRandom = (seed) => {
-  const x = Math.sin(seed * 127.1 + 311.7) * 43758.5453;
-  return x - Math.floor(x);
-};
+import { seededRandom } from '../lib/random';
 
 export default function DotField() {
   const ref = useRef(null);
