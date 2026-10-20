@@ -1,0 +1,65 @@
+---
+import { getCollection } from "astro:content";
+import Base from "../../layouts/Base.astro";
+import Header from "../../components/Header.astro";
+import Page from "../../components/Page.astro";
+import BackLink from "../../components/BackLink.astro";
+import Popup from "../../components/Popup.astro";
+import AudioPlayer from "../../islands/AudioPlayer.jsx";
+import Playlists from "../../islands/Playlists.jsx";
+import { asset, playlistEmbed, renderMarkdown } from "../../lib/content";
+import { withImageVariants } from "../../lib/images";
+import { abs, describe } from "../../lib/seo";
+
+export async function getStaticPaths() {
+  const albums = await getCollection("albums");
+  return albums.map((album, index) => ({ params: { id: album.id }, props: { album, index } }));
+}
+const { album, index } = Astro.props;
+const a = album.data;
+const episodes = a.episodes?.length ? a.episodes.map((e) => ({ ...e, src: asset(e.src) })) : null;
+const playlists = (a.playlists ?? []).filter((p) => p.url)
+  .map((p) => ({ ...p, ...(playlistEmbed(p) || { embed: null, hauteur: null }) }));
+---
+<Base title={`${a.titre} — Vania Jaikin Miyazaki`} path={`/films/${album.id}`} description={describe(a.resume)}
+  ld={[
+    { "@type": "PodcastSeries", "@id": abs(`/films/${album.id}`), name: a.titre, url: abs(`/films/${album.id}`), description: describe(a.resume), inLanguage: "fr" },
+    ...(a.episodes ?? []).map((e) => ({
+      "@type": "PodcastEpisode", name: e.title, episodeNumber: e.id, url: abs(`/films/${album.id}`),
+      timeRequired: `PT${e.sec}S`, partOfSeries: { "@id": abs(`/films/${album.id}`) },
+      associatedMedia: { "@type": "AudioObject", contentUrl: abs(asset(e.src)) },
+    })),
+  ]}>
+  <Header />
+  <Page>
+    <BackLink href="/films" label="Films pour les oreilles" />
+    <div class="entete">
+      <h1>{a.titre}</h1>
+      {a.resume && (
+        <button type="button" data-album-info={album.id} aria-label={`Infos — ${a.titre}`} title="Infos">
+          <img src={`/assets/brand/info-album-${Math.min(index + 1, 3)}.svg`} alt="" aria-hidden="true" />
+        </button>
+      )}
+    </div>
+    {/* Non persisté : comme l'ancien AlbumPage, quitter la page démonte le lecteur et coupe le son. */}
+    {episodes && <AudioPlayer client:load tracks={episodes} />}
+    {playlists.length > 0 && <Playlists client:load playlists={playlists} title={a.titre} />}
+    {a.contenu && <div class="vjm-prose contenu" set:html={withImageVariants(renderMarkdown(a.contenu))} />}
+  </Page>
+  {a.resume && (
+    <Popup id={`popup-album-${album.id}`} seed={index + 2} label={a.titre}>
+      <p class="vjm-popup-title">{a.titre}</p>
+      <p style="font-family:var(--font-body);font-size:17px;line-height:1.7;opacity:0.92">{a.resume}</p>
+    </Popup>
+  )}
+</Base>
+<style>
+  .entete { display: flex; align-items: center; gap: 16px; margin-bottom: var(--block-gap); }
+  h1 { font-family: var(--font-heading); font-weight: 400; font-size: clamp(1.25rem, 2.2vw, 1.7rem); line-height: 1.2; }
+  button {
+    background: none; border: none; color: var(--fg-muted); width: 40px; height: 40px; cursor: pointer;
+    flex-shrink: 0; display: flex; align-items: center; justify-content: center; opacity: 0.68;
+  }
+  img { width: 25px; height: 25px; object-fit: contain; display: block; filter: var(--ink-invert); }
+  .contenu { margin-top: var(--block-gap); max-width: 720px; font-size: clamp(1.02rem, 1.35vw, 1.15rem); }
+</style>

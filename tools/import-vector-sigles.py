@@ -14,7 +14,7 @@ sys.stdout.reconfigure(encoding="utf-8", errors="replace")
 
 ROOT = Path(__file__).resolve().parent.parent
 SOURCE = ROOT / "JONATHAN" / "Sigles" / "SIGLES_VECT"
-OUT = ROOT / "assets" / "brand"
+OUT = ROOT / "public" / "assets" / "brand"
 
 
 def number(value):

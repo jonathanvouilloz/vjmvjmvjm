@@ -1,0 +1,10 @@
+---
+import Sigle from "./Sigle.astro";
+interface Props { id: string; label: string; align?: "center" | "left" }
+const { id, label, align = "center" } = Astro.props;
+---
+<h1 style={`font-family:var(--font-digital);font-weight:400;font-size:clamp(1.4rem, 3vw, 2rem);letter-spacing:0.05em;margin-bottom:var(--block-gap);display:flex;align-items:center;gap:16px;justify-content:${align === "center" ? "center" : "flex-start"}`}>
+  <Sigle id={id} flip size="0.85em" opacity={0.45} />
+  {label}
+  <Sigle id={id} size="0.85em" opacity={0.45} />
+</h1>

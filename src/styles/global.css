@@ -1,0 +1,159 @@
+/* Styles globaux, portés du gabarit HTML (`:root`, prose) et de useGlobalTypo (waniushka-app.jsx),
+   dont les valeurs étaient identiques à celles du gabarit : un seul `:root` suffit. */
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+:root {
+  --bg: #FAFAF8;
+  /* voile semi-transparent (aléas du jour) : laisse passer le flou d'arrière-plan */
+  --bg-veil: rgba(250, 250, 248, 0.86);
+  --fg: #1A1A1A;
+  --fg-muted: #8A8A8A;
+  --fg-subtle: #C8C8C8;
+  --border: rgba(0,0,0,0.07);
+  /* Les dessins scannés (nom manuscrit, sigles) sont de l'encre noire sur fond
+     transparent : en thème sombre on les inverse plutôt que de doubler les fichiers. */
+  --ink-invert: none;
+  /* 2 familles : serif Newsreader (titres + corps) · Manrope (sections « digitales », chiffres, UI) */
+  --font-heading: 'Newsreader', Georgia, serif;
+  --font-body: 'Newsreader', Georgia, serif;
+  --font-digital: 'Manrope', sans-serif;
+  /* titres du menu : la famille est posée par Base.astro depuis content/site.json (policeMenu) */
+  --font-menu: 'Open Sans', sans-serif;
+  --heading-weight: 400;
+  --heading-spacing: 0.02em;
+  --nav-transform: none;
+  --nav-spacing: 0.06em;
+  --nav-size: 14px;
+
+  /* Layout : container de base, en-tête, rythme vertical */
+  --container-max: 1440px;
+  --container-pad: clamp(24px, 5vw, 72px);
+  --header-h: 78px;
+  --page-top: calc(var(--header-h) + clamp(40px, 6vh, 80px));
+  --page-bottom: clamp(80px, 10vh, 140px);
+  --block-gap: clamp(32px, 4vw, 56px);
+}
+
+[data-theme="dark"] {
+  --bg: #0A0A0A;
+  --bg-veil: rgba(10, 10, 10, 0.86);
+  --fg: #E8E8E6;
+  --fg-muted: #6E6E6E;
+  --fg-subtle: #2A2A2A;
+  --border: rgba(255,255,255,0.07);
+  --ink-invert: invert(1);
+}
+
+html {
+  background: var(--bg);
+  color: var(--fg);
+  transition: background 0.5s ease, color 0.5s ease;
+}
+
+body {
+  font-family: var(--font-body);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+  overflow-x: hidden;
+}
+
+::selection { background: var(--fg); color: var(--bg); }
+
+::-webkit-scrollbar { width: 3px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--fg-muted); border-radius: 2px; }
+
+button { font-family: inherit; }
+a { color: inherit; }
+
+/* ── Contenu éditable (content/ → Markdown rendu au build) ── */
+.vjm-prose { font-family: var(--font-body); line-height: 1.7; }
+.vjm-prose p { margin-bottom: 1.05em; }
+.vjm-prose > :last-child > :last-child { margin-bottom: 0; }
+.vjm-prose a { color: inherit; text-decoration: underline; text-decoration-color: var(--fg-subtle); text-underline-offset: 0.18em; transition: text-decoration-color 0.25s; }
+.vjm-prose a:hover { text-decoration-color: currentColor; }
+.vjm-prose em { font-style: italic; }
+.vjm-prose strong { font-weight: 600; }
+.vjm-prose ul, .vjm-prose ol { margin: 0 0 1.05em 1.2em; }
+.vjm-prose blockquote { margin: 1.4em 0; padding-left: 1.2em; border-left: 1px solid var(--fg-subtle); font-style: italic; }
+.vjm-prose figure { margin: 2em 0; }
+.vjm-prose figure img { display: block; max-width: 100%; height: auto; margin: 0 auto; }
+.vjm-prose img { max-width: 100%; height: auto; }
+.vjm-prose .vjm-video iframe { display: block; width: 100%; aspect-ratio: 16 / 9; border: 0; background: #000; }
+.vjm-prose figcaption, .vjm-prose .vjm-audio-title { margin-top: 8px; font-size: 0.82em; color: var(--fg-muted); text-align: center; }
+.vjm-prose .vjm-audio-title { margin: 0 0 8px; text-align: left; }
+.vjm-prose .vjm-liste p { margin-bottom: 0.35em; font-size: 0.92em; }
+.vjm-prose .vjm-liste { margin-bottom: 1.05em; }
+.vjm-prose-small { font-size: 15px; line-height: 1.65; }
+.fn-ref { font-size: 0.6em; line-height: 0; margin-left: 1px; font-family: var(--font-digital); }
+.fn-ref a { text-decoration: none !important; padding: 0 2px; }
+/* notes discrètes : un cran sous le texte, interligne resserré */
+.vjm-notes { margin-top: 3em; padding-top: 1.2em; border-top: 1px solid var(--border); font-size: 0.72em; line-height: 1.55; color: var(--fg-muted); }
+.vjm-notes li { margin-bottom: 0.6em; list-style: none; display: flex; gap: 8px; }
+.vjm-notes p { margin-bottom: 0.4em; }
+[id^="note-"], [id^="ref-"] { scroll-margin-top: calc(var(--header-h) + 24px); }
+.vjm-scroll { scrollbar-width: thin; }
+.vjm-sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
+@keyframes pulse {
+  0%, 100% { opacity: 0.4; }
+  50% { opacity: 0.8; }
+}
+
+/* Navigation ClientRouter (Base.astro) : l'ancienne page s'efface d'un coup, la nouvelle entre
+   comme dans l'ancien PageTransition (0.55s, montée de 10px). Sur la racine plutôt que sur
+   <body> : un instantané de body morpherait entre deux hauteurs et positions de défilement.
+   L'en-tête, persisté, a son propre nom de transition et ne bouge pas. */
+::view-transition-old(root) { animation: none; opacity: 0; }
+::view-transition-new(root) { animation: vjm-page-in 0.55s ease both; }
+@keyframes vjm-page-in {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* ── Pop-ups (src/scripts/popups.ts) : carte à contour dessiné posée sur la page ── */
+.vjm-popup {
+  position: fixed; inset: 0; z-index: 300; padding: clamp(16px, 4vw, 40px);
+  display: flex; align-items: center; justify-content: center;
+  background: rgba(0, 0, 0, 0); backdrop-filter: blur(2px); transition: background 0.35s ease;
+}
+.vjm-popup[data-show] { background: rgba(0, 0, 0, 0.55); }
+.vjm-popup-card {
+  position: relative; width: 100%; background: var(--bg); color: var(--fg);
+  opacity: 0; transform: translateY(12px) rotate(var(--tilt, 0deg));
+  transition: opacity 0.35s ease, transform 0.35s ease;
+}
+.vjm-popup[data-show] .vjm-popup-card { opacity: 1; transform: translateY(0) rotate(var(--tilt, 0deg)); }
+.vjm-popup-body {
+  padding: clamp(40px, 5vw, 60px) clamp(24px, 5vw, 64px);
+  max-height: min(82vh, 900px); overflow-y: auto; overscroll-behavior: contain;
+}
+.vjm-popup-close {
+  position: absolute; top: 10px; right: 12px; z-index: 1; width: 40px; height: 40px;
+  background: none; border: none; cursor: pointer; color: var(--fg); font-size: 24px; line-height: 1; opacity: 0.6;
+}
+.vjm-popup-title { font-family: var(--font-heading); font-size: clamp(1.25rem, 2.6vw, 1.7rem); margin-bottom: 22px; padding-right: 28px; }
+
+/* Aléa du jour : écran plein, l'écriture de Vania détourée (encre inversée en sombre) */
+.vjm-alea {
+  position: fixed; inset: 0; z-index: 400; background: var(--bg); color: var(--fg);
+  display: flex; align-items: center; justify-content: center; padding: clamp(24px, 6vw, 80px);
+  opacity: 0; transition: opacity 0.35s ease;
+}
+.vjm-alea[data-show] { opacity: 1; }
+.vjm-alea-close {
+  position: absolute; top: 18px; right: 20px; width: 44px; height: 44px;
+  background: none; border: none; color: var(--fg); cursor: pointer; font-size: 28px; line-height: 1; opacity: 0.68;
+}
+.vjm-alea img {
+  display: block; margin: 0 auto; max-width: 88vw; max-height: 76vh; width: auto; height: auto;
+  filter: var(--ink-invert) blur(10px); opacity: 0; transform: translateY(12px);
+  transition: opacity 0.9s cubic-bezier(0.22, 0.61, 0.36, 1), filter 0.9s cubic-bezier(0.22, 0.61, 0.36, 1), transform 0.9s cubic-bezier(0.22, 0.61, 0.36, 1);
+}
+.vjm-alea[data-show] img { filter: var(--ink-invert) blur(0px); opacity: 1; transform: translateY(0); }
+@media (prefers-reduced-motion: reduce) {
+  .vjm-alea { transition: none; }
+  .vjm-alea img { transition: opacity 0.15s linear; filter: var(--ink-invert); transform: none; }
+}
+.popup-tag { font-family: var(--font-digital); font-size: 11px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--fg-muted); margin-bottom: 10px; }

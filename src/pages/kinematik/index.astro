@@ -1,0 +1,140 @@
+---
+import { getCollection } from "astro:content";
+import Base from "../../layouts/Base.astro";
+import Header from "../../components/Header.astro";
+import Page from "../../components/Page.astro";
+import BackLink from "../../components/BackLink.astro";
+import { filmUrl } from "../../lib/content";
+import { seededRandom as rnd } from "../../lib/random";
+import { kinematikImage } from "../../lib/images";
+import { itemList } from "../../lib/seo";
+
+/* Les vignettes Vimeo sont toutes en 16/9 ; les carrés et verticaux sont des recadrages en
+   `object-fit: cover`. Tout est tiré de `seededRandom(i)` : même agencement à chaque visite. */
+const RATIOS = ["16 / 9", "1 / 1", "4 / 3", "3 / 4", "16 / 9", "5 / 4", "4 / 3", "4 / 5"];
+
+const films = await getCollection("kinematik");
+// Variables de la version bureau ; le mobile (≤ 760px) les écrase en CSS par deux colonnes bien rangées.
+const vars = (i: number) => {
+  // la vignette n'occupe pas toute sa colonne et n'y est pas centrée : ce décalage, plus que la rotation, casse l'alignement
+  const w = 80 + rnd(i + 300) * 20;
+  return [
+    `--w:${w.toFixed(1)}%`, `--shift:${((100 - w) * rnd(i + 250)).toFixed(4)}%`,
+    `--base:rotate(${((rnd(i) - 0.5) * 5).toFixed(2)}deg) translate(${((rnd(i + 50) - 0.5) * 14).toFixed(1)}px, ${((rnd(i + 100) - 0.5) * 10).toFixed(1)}px)`,
+    `--cadre:${rnd(i + 150) > 0.65 ? "1px solid var(--fg-subtle)" : "none"}`, `--pad:${rnd(i + 200) > 0.7 ? 6 : 0}px`,
+    `--ratio:${RATIOS[i % RATIOS.length]}`,
+  ].join(";");
+};
+---
+<Base title="Kinematik — Vania Jaikin Miyazaki" path="/kinematik"
+  ld={{ ...itemList(films.map((f) => ({ name: f.data.titre, url: filmUrl(f) }))), name: "Kinematik" }}>
+  <Header />
+  <Page>
+    <BackLink href="/menu" />
+    <div class="colonnes">
+      {films.map((f, i) => {
+        const v = f.data;
+        const img = kinematikImage({ id: f.id, vignette: v.vignette });
+        return (
+          <div class="tuile" style={vars(i)}>
+            <div class="cadre">
+              {/* Hors du lien (pas de bouton dans un <a>) mais avant lui : les règles d'état du « i » le visent par ~. */}
+              {v.information && (
+                <button type="button" class="info" aria-label={`Information — ${v.titre}`} aria-expanded="false">
+                  <img src={`/assets/brand/info-album-${(i % 3) + 1}.svg`} alt="" aria-hidden="true" />
+                </button>
+              )}
+              <a href={filmUrl(f)} class="lien">
+                {img && <img class="vignette" src={img.src} alt={v.titre} loading="lazy" />}
+                {/* Information exceptionnelle (sélection, prix, diffusion…) : toujours visible, le voile passe par-dessus. */}
+                {v.mention && <span class="mention">{v.mention}</span>}
+                {/* Voile franc dans la couleur du site : atténuer l'image rendait la durée et l'année illisibles. */}
+                <span class="voile">
+                  <span class="titrage">
+                    <span class="titre">{v.titre}</span>
+                    {v.sousTitre && <span class="sous-titre">{v.sousTitre}</span>}
+                    {/* « Trailer » explique une durée de deux minutes pour un film qui en fait quatre-vingt-dix */}
+                    <span class="meta">{v.trailer && "Trailer · "}{v.duree} · {v.annee}</span>
+                  </span>
+                  {v.information && <span class="texte vjm-scroll">{v.information}</span>}
+                </span>
+              </a>
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  </Page>
+</Base>
+<script>
+  /* Le « i » : survol et focus clavier sont en CSS. Ici, seul l'épinglage (clic/tap, sans ouvrir le film). */
+  // Relancé à chaque page (ClientRouter) : les tuiles sont neuves à chaque visite, donc liées une seule fois.
+  document.addEventListener("astro:page-load", () => {
+    document.querySelectorAll<HTMLButtonElement>(".tuile .info").forEach((btn) => {
+      btn.addEventListener("click", () => btn.setAttribute("aria-expanded", String(btn.getAttribute("aria-expanded") !== "true")));
+      btn.addEventListener("blur", () => btn.setAttribute("aria-expanded", "false"));
+      // Au tactile le navigateur émet un mouseleave juste après le tap : seule une vraie sortie de souris referme.
+      btn.closest(".tuile")!.addEventListener("pointerleave", (e) => {
+        if ((e as PointerEvent).pointerType === "mouse") btn.setAttribute("aria-expanded", "false");
+      });
+    });
+  });
+</script>
+<style>
+  .colonnes { column-count: 3; column-gap: 40px; }
+  .tuile {
+    break-inside: avoid; width: var(--w); margin-left: var(--shift); margin-bottom: 48px; position: relative;
+    padding: var(--pad); border: var(--cadre); transform: var(--base); transition: transform 0.3s ease;
+  }
+  /* le survol s'ajoute à la rotation de base, sinon la vignette se redresse d'un coup */
+  @media (hover: hover) { .tuile:hover { transform: var(--base) scale(1.03); } }
+  .cadre { position: relative; width: 100%; aspect-ratio: var(--ratio); background: var(--fg-subtle); overflow: hidden; }
+  .lien { position: absolute; inset: 0; display: block; color: var(--fg); text-decoration: none; cursor: pointer; }
+  .vignette { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .mention {
+    position: absolute; left: 0; bottom: 0; max-width: 100%; background: var(--bg); color: var(--fg);
+    padding: 4px 9px 5px; font-family: var(--font-digital); font-size: 11px; letter-spacing: 0.05em; line-height: 1.35;
+  }
+  .voile {
+    position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center;
+    text-align: center; padding: 14px; background: var(--bg); color: var(--fg); opacity: 0;
+    transition: opacity 0.3s; font-family: var(--font-body);
+  }
+  .titrage { display: flex; flex-direction: column; align-items: center; }
+  .titre { font-size: clamp(15px, 1.5vw, 19px); font-family: var(--font-heading); line-height: 1.3; }
+  .sous-titre { font-size: clamp(14px, 1.4vw, 18px); font-family: var(--font-heading); line-height: 1.3; opacity: 0.75; }
+  .meta { font-family: var(--font-digital); font-size: 12px; color: var(--fg-muted); margin-top: 10px; }
+  .texte {
+    display: none; max-height: 100%; overflow-y: auto; padding: 0 18px;
+    font-size: clamp(12px, 1.1vw, 14px); line-height: 1.5; white-space: pre-line;
+  }
+  .info {
+    position: absolute; top: 6px; right: 6px; z-index: 1; width: 30px; height: 30px; padding: 5px;
+    border-radius: 50%; border: none; cursor: help; background: var(--bg); opacity: 0.85; transition: opacity 0.2s;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .info img { width: 18px; height: 18px; object-fit: contain; display: block; filter: var(--ink-invert); }
+
+  /* Voile : survol de la tuile (souris), focus clavier du lien. */
+  .lien:focus-visible .voile { opacity: 1; }
+  @media (hover: hover) { .tuile:hover .voile { opacity: 1; } }
+  /* Information à la place du titre : « i » épinglé, focus clavier (:focus-visible, pas le focus d'un clic) ou survol souris. */
+  .info:is([aria-expanded="true"], :focus-visible) { opacity: 1; }
+  .info:is([aria-expanded="true"], :focus-visible) ~ .lien .voile { opacity: 1; }
+  .info:is([aria-expanded="true"], :focus-visible) ~ .lien .titrage { display: none; }
+  .info:is([aria-expanded="true"], :focus-visible) ~ .lien .texte { display: block; }
+  @media (hover: hover) {
+    .info:hover ~ .lien .voile { opacity: 1; }
+    .info:hover ~ .lien .titrage { display: none; }
+    .info:hover ~ .lien .texte { display: block; }
+  }
+
+  /* Mobile : deux colonnes bien rangées, tout en 16/9 ; le désordre tourne au chaos sur un téléphone. */
+  @media (max-width: 760px) {
+    .colonnes { column-count: 2; column-gap: 16px; }
+    .tuile { width: 100%; margin-left: 0; margin-bottom: 16px; padding: 0; border: none; transform: none; }
+    .cadre { aspect-ratio: 16 / 9; }
+    .mention { font-size: 10px; }
+    .texte { font-size: 11px; }
+  }
+</style>

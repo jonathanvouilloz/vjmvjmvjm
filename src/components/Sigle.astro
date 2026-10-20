@@ -1,0 +1,13 @@
+---
+import { sigleSource } from "../lib/sigles";
+interface Props { id: string; flip?: boolean; size?: string; opacity?: number }
+const { id, flip = false, size = "0.8em", opacity = 0.75 } = Astro.props;
+const s = sigleSource(id, flip);
+---
+{s && s.src && (
+  <img src={s.src} alt="" aria-hidden="true"
+    style={`height:${size};width:auto;display:block;opacity:${opacity};filter:var(--ink-invert);transform:${s.transform}`} />
+)}
+{s && !s.src && (
+  <span aria-hidden="true" style={`opacity:${opacity};font-size:${size};display:block;transform:${s.transform}`}>{s.glyph}</span>
+)}

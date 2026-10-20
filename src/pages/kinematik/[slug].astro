@@ -1,0 +1,55 @@
+---
+import { getCollection } from "astro:content";
+import Base from "../../layouts/Base.astro";
+import Lightbox from "../../components/Lightbox.astro";
+import Blocks from "../../components/Blocks.astro";
+import { filmUrl } from "../../lib/content";
+import { kinematikImage } from "../../lib/images";
+import { abs, describe, isoDuration, person } from "../../lib/seo";
+
+export async function getStaticPaths() {
+  // Même liste et même ordre que la grille /kinematik, donc mêmes voisins.
+  const films = await getCollection("kinematik");
+  return films.map((film, i) => ({
+    params: { slug: film.data.slug || film.id },
+    props: { film, prev: films[(i - 1 + films.length) % films.length], next: films[(i + 1) % films.length], count: films.length },
+  }));
+}
+const { film, prev, next, count } = Astro.props;
+const v = film.data;
+const thumb = kinematikImage({ id: film.id, vignette: v.vignette })?.src;
+const info = !!(v.resume?.length || v.generique?.length);
+---
+<Base title={`${v.titre} — Vania Jaikin Miyazaki`} path={filmUrl(film)} description={describe(v.information, v.resume)} image={thumb}
+  ld={{
+    "@type": "VideoObject", name: v.titre, description: describe(v.information, v.resume) ?? v.titre,
+    thumbnailUrl: thumb && abs(thumb), // Google veut une date complète ; le contenu ne donne que l'année
+    uploadDate: `${v.annee}-01-01`, duration: isoDuration(v.duree),
+    embedUrl: `https://player.vimeo.com/video/${v.vimeoId}`, url: abs(filmUrl(film)), inLanguage: "fr",
+    director: await person(),
+  }}>
+  <Lightbox closeHref="/kinematik" label={v.titre} prevHref={count > 1 ? filmUrl(prev) : undefined} nextHref={count > 1 ? filmUrl(next) : undefined}>
+    <div class="video">
+      <iframe src={`https://player.vimeo.com/video/${v.vimeoId}${v.hash ? `?h=${v.hash}` : ""}`} title={v.titre}
+        allow="autoplay; fullscreen; picture-in-picture" allowfullscreen></iframe>
+    </div>
+    <Fragment slot="legende">
+      {v.titre}{v.sousTitre && <><br />{v.sousTitre}</>}<br />
+      <span class="num">{v.trailer && "Trailer · "}{v.duree} · {v.annee}</span>
+    </Fragment>
+    {info && (
+      <Fragment slot="info">
+        <Blocks blocks={v.resume} class="vjm-prose-small" />
+        {v.generique?.length > 0 && <dl>{v.generique.map((g) => <div><dt>{g.role}</dt><dd>{g.noms}</dd></div>)}</dl>}
+      </Fragment>
+    )}
+  </Lightbox>
+</Base>
+<style is:global>
+  .lb .video {
+    width: min(84vw, 1100px, calc((100vh - 170px) * 16 / 9)); aspect-ratio: 16 / 9; background: #000; transition: width 0.35s ease;
+  }
+  /* le panneau d'infos se déplie sous le lecteur, qui rétrécit pour lui laisser la place */
+  .lb[data-info-open] .video { width: min(84vw, 1100px, calc((100vh - 380px) * 16 / 9)); }
+  .lb .video iframe { width: 100%; height: 100%; border: 0; }
+</style>

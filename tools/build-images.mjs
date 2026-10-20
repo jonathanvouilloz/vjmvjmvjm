@@ -9,16 +9,20 @@
      · version réduite si l'image dépasse la taille d'affichage ;
      · vignette de collage, sauf si une `nom-t.jpg` existe déjà à côté de l'image.
 
-   Les fichiers produits vont dans `assets/_gen/` (ignoré par git, copié dans dist/ avec le
-   reste de `assets/`). Leur nom dépend du chemin, de la taille et de la date du fichier
+   Les fichiers produits vont dans `public/assets/_gen/` (ignoré par git, copié dans dist/
+   avec le reste de `public/`). Leur nom dépend du chemin, de la taille et de la date du fichier
    source : une image inchangée n'est pas retraitée, et ce qui n'est plus référencé est
    supprimé en fin de build.
+
+   Lancé seul (`node tools/build-images.mjs`, avant `astro build`), il écrit le manifeste
+   `src/generated/images.json` : chemin du CMS → `{ src, w, h, thumb? }`, lu par le site.
 
    Une image listée mais introuvable est retirée avec un avertissement plutôt que de casser
    le build : sinon une suppression maladroite dans le CMS bloquerait toute mise en ligne. */
 import crypto from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
+import { pathToFileURL } from "node:url";
 import sharp from "sharp";
 
 const GEN = "assets/_gen";
@@ -36,6 +40,9 @@ const KEEP = new Set(["png", "gif", "svg"]);
 export function createImageBuilder({ root = "." } = {}) {
   const used = new Set();
   const warnings = [];
+  // shortcut: une image demandée à deux tailles garde la première ; à revoir si un même
+  // fichier sert un jour à deux usages de tailles différentes
+  const manifest = {};
   const pending = new Map(); // sortie → promesse : une même variante n'est écrite qu'une fois
   const hashes = new Map();
   const abs = (p) => path.join(root, p);
@@ -96,6 +103,7 @@ export function createImageBuilder({ root = "." } = {}) {
           : keep || Math.max(w0, h0) <= THUMB ? out.src
           : await variant(src, THUMB, "-t");
       }
+      manifest[src] ??= out;
       return out;
     } catch (error) {
       warnings.push(`image illisible, ignorée : ${src} (${error.message})`);
@@ -109,7 +117,7 @@ export function createImageBuilder({ root = "." } = {}) {
     for (const f of fs.readdirSync(abs(GEN))) if (!used.has(f)) fs.rmSync(abs(path.join(GEN, f)));
   }
 
-  return { image, prune, warnings };
+  return { image, prune, warnings, manifest };
 }
 
 // Le chemin sert d'identifiant : deux fichiers de même nom dans deux dossiers (un carnet et
@@ -117,31 +125,28 @@ export function createImageBuilder({ root = "." } = {}) {
 const idOf = (src) => src;
 // Toute image de `assets/` sauf les variantes déjà produites : le CMS dépose où on lui dit.
 const UPLOAD = /^assets\/(?!_gen\/)[^"]+\.(jpe?g|png|webp|tiff?|heic)$/i;
-const TEXT_KEYS = /^(html|corpsHtml|contenuHtml)$/;
+// Champs texte : Markdown brut (`md`, `corps`, `contenu`) ou HTML déjà rendu.
+const TEXT_KEYS = /^(md|corps|contenu|html|corpsHtml|contenuHtml)$/;
 
-/* Images insérées dans les textes (blocs image, éditeur riche) : réduites à 1600 px aussi,
-   sinon une photo de téléphone collée dans un texte partirait en ligne à 5 Mo. */
+/* Images insérées dans les textes (blocs image, éditeur riche) : inscrites au manifeste, réduites à
+   1600 px aussi (le site les y retrouve), sinon une photo de téléphone collée dans un texte partirait en ligne à 5 Mo. */
 async function resolveTextImages(node, b) {
   if (Array.isArray(node)) { for (const n of node) await resolveTextImages(n, b); return; }
   if (!node || typeof node !== "object") return;
   for (const [k, v] of Object.entries(node)) {
     if (k === "src" && typeof v === "string" && UPLOAD.test(clean(v))) {
-      node.src = (await b.image(v, { max: 1600 }))?.src || v;
+      await b.image(v, { max: 1600 });
     } else if (TEXT_KEYS.test(k) && typeof v === "string" && v.includes("assets/")) {
-      let html = v;
-      for (const [, src] of v.matchAll(/src="\/?(assets\/[^"]+)"/g)) {
-        if (!UPLOAD.test(src)) continue;
-        const img = await b.image(src, { max: 1600 });
-        if (img) html = html.split(`"${src}"`).join(`"${img.src}"`).split(`"/${src}"`).join(`"${img.src}"`);
+      for (const [, src] of v.matchAll(/(?:src="|\]\()\/?(assets\/[^"\s)]+)/g)) {
+        if (UPLOAD.test(src)) await b.image(src, { max: 1600 });
       }
-      node[k] = html;
     } else {
       await resolveTextImages(v, b);
     }
   }
 }
 
-/* Résout toutes les images de `content` (déjà passé par loadContent) en place, et renvoie
+/* Résout toutes les images de `content` (listes brutes de `content/`) en place, et renvoie
    les galeries prêtes pour le site. */
 export async function resolveImages(content, { root = "." } = {}) {
   const b = createImageBuilder({ root });
@@ -181,5 +186,36 @@ export async function resolveImages(content, { root = "." } = {}) {
 
   b.prune();
   for (const w of b.warnings) console.warn("⚠", w);
-  return { carnets, home, portraits, aleas };
+  return { carnets, home, portraits, aleas, manifest: b.manifest };
+}
+
+const readJson = (file) => JSON.parse(fs.readFileSync(file, "utf8"));
+const optional = (file, key) => (fs.existsSync(file) ? readJson(file)[key] || [] : []);
+
+// Les listes de `content/` dont resolveImages a besoin, telles que le CMS les écrit.
+export function loadImageSources(dir = "content") {
+  const lectureDir = path.join(dir, "lecture");
+  const { portraits = [], ...bio } = readJson(path.join(dir, "bio.json"));
+  return {
+    bio,
+    portraits,
+    kinematik: readJson(path.join(dir, "kinematik.json")).films,
+    albums: readJson(path.join(dir, "albums.json")).albums,
+    news: readJson(path.join(dir, "news.json")).news,
+    carnets: optional(path.join(dir, "carnets.json"), "carnets"),
+    accueil: optional(path.join(dir, "accueil.json"), "photos"),
+    aleas: optional(path.join(dir, "aleas.json"), "aleas"),
+    lecture: fs.existsSync(lectureDir)
+      ? fs.readdirSync(lectureDir).filter((f) => f.endsWith(".json"))
+        .map((f) => ({ id: path.basename(f, ".json"), ...readJson(path.join(lectureDir, f)) }))
+        .filter((t) => t.publie !== false)
+      : [],
+  };
+}
+
+if (import.meta.url === pathToFileURL(process.argv[1]).href) {
+  const { manifest } = await resolveImages(loadImageSources("content"), { root: "public" });
+  fs.mkdirSync("src/generated", { recursive: true });
+  fs.writeFileSync("src/generated/images.json", JSON.stringify(manifest, null, 1));
+  console.log(`build-images : ${Object.keys(manifest).length} images dans src/generated/images.json`);
 }

@@ -26,7 +26,11 @@ Thumbs.db
 /waniushka-netlify-rc*.zip
 
 # Images préparées au build (tools/build-images.mjs)
-/assets/_gen/
+/public/assets/_gen/
 
 # Local Netlify folder
 .netlify
+
+# Astro : types générés et manifeste d'images (tools/build-images.mjs)
+.astro/
+/src/generated/

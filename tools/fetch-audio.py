@@ -23,7 +23,7 @@ from pathlib import Path
 sys.stdout.reconfigure(encoding="utf-8", errors="replace")
 
 ROOT = Path(__file__).resolve().parent.parent
-OUT = ROOT / "assets" / "audio"
+OUT = ROOT / "public" / "assets" / "audio"
 CACHE = ROOT / ".audio-cache"          # les sources brutes, hors build (jamais copiées en prod)
 
 DRIVE = 1049875

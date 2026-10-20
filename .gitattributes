@@ -7,4 +7,4 @@
 *.py text eol=lf
 *.md text eol=lf
 *.svg text eol=lf
-assets/fonts/*-LICENSE.txt binary
+archive/fonts/*-LICENSE.txt binary

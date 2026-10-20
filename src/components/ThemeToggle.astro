@@ -1,0 +1,35 @@
+---
+// Bascule clair/sombre : le script du document pose `data-theme`, le CSS choisit l'icône
+// (lune en clair, soleil en sombre), sans île React.
+---
+<button class="theme-toggle" type="button" aria-label="Activer le thème sombre">
+  <img class="moon" src="/assets/brand/nav-moon.svg" alt="" aria-hidden="true" width="27" height="27" />
+  <img class="sun" src="/assets/brand/nav-sun.svg" alt="" aria-hidden="true" width="27" height="27" />
+</button>
+<style>
+  .theme-toggle {
+    background: none; border: none; cursor: pointer; padding: 8px; width: 44px; height: 44px;
+    display: flex; align-items: center; justify-content: center;
+    color: var(--fg); opacity: 0.85; transition: opacity 0.3s;
+  }
+  .theme-toggle:hover { opacity: 1; }
+  img { object-fit: contain; display: block; filter: var(--ink-invert); }
+  .sun { display: none; }
+  :global([data-theme="dark"]) .moon { display: none; }
+  :global([data-theme="dark"]) .sun { display: block; }
+</style>
+<script>
+  const root = document.documentElement;
+  const label = () => document.querySelectorAll<HTMLElement>(".theme-toggle").forEach((b) =>
+    b.setAttribute("aria-label", root.dataset.theme === "dark" ? "Activer le thème clair" : "Activer le thème sombre"));
+  // le bouton peut être neuf après une navigation ClientRouter (venue de l'accueil, sans en-tête)
+  document.addEventListener("astro:page-load", label);
+  // délégation sur le document : le bouton peut être remplacé par une navigation sans perdre l'écouteur
+  document.addEventListener("click", (e) => {
+    if (!(e.target as Element).closest(".theme-toggle")) return;
+    const next = root.dataset.theme === "dark" ? "light" : "dark";
+    root.dataset.theme = next;
+    try { localStorage.setItem("vjm-theme", next); } catch {}
+    label();
+  });
+</script>

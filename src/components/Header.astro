@@ -1,0 +1,142 @@
+---
+/* En-tête constant sur toutes les pages : nom (+ news) à gauche · maison / étoile / thème /
+   montagne au centre · ≡ à droite. Les anciens callbacks d'état sont des liens. */
+import { getCollection, getEntry } from "astro:content";
+import { asset } from "../lib/content";
+import { imageSrc } from "../lib/images";
+import MenuDropdown from "../islands/MenuDropdown.jsx";
+import ThemeToggle from "./ThemeToggle.astro";
+import Popup from "./Popup.astro";
+import Blocks from "./Blocks.astro";
+import { inWindow, utcDay } from "../lib/news";
+import { SECTIONS_MENU, sigleSource } from "../lib/sigles";
+
+/* Toutes les annonces actives sont rendues avec leur fenêtre de dates ; le navigateur retient
+   la première dont la fenêtre couvre le jour (comme l'ancien activeNews), sans rebuild. Sans
+   JS, on garde celle qui l'est au moment du build. */
+const today = utcDay();
+const items = (await getCollection("news")).map((n) => n.data).filter((n) => n.actif);
+const first = items.find((n) => inWindow(n, today));
+
+const sections = SECTIONS_MENU.map((s) => ({
+  ...s,
+  href: `/${s.id}`,
+  sigles: { left: sigleSource(s.id, true), right: sigleSource(s.id, false) },
+}));
+// Pool de l'aléa du jour : la pop-up (Tâche 7) en tire une image au hasard à chaque clic, comme l'ancien openStar.
+const aleas = (await getEntry("aleas", "aleas"))!.data.aleas.map(imageSrc);
+const secondary = [{ label: "contact", href: "/contact" }, { label: "bio", href: "/bio" }];
+---
+<!-- Persisté d'une page à l'autre et hors du fondu de page, comme l'ancien en-tête qui restait
+     en place pendant que le contenu changeait. -->
+<header transition:persist="header" transition:name="header" transition:animate="none">
+  <div class="left">
+    <a href="/bio" class="name" title="Bio" aria-label="Vania Jaikin Miyazaki">
+      <!-- Nom en capitales dessiné par Vania et détouré ; l'encre noire s'inverse en sombre. -->
+      <img src="/assets/brand/nom-manuscrit.png" alt="Vania Jaikin Miyazaki" />
+    </a>
+    {items.map((news, i) => {
+      const attrs = { "data-news": i, "data-debut": news.debut, "data-fin": news.fin, hidden: news !== first };
+      return news.mode === "lien" && news.url ? (
+        <a class="news" href={news.url} target="_blank" rel="noopener noreferrer" {...attrs}>
+          <span class="dot" aria-hidden="true"></span><span class="tag">news</span><span class="titre">{news.titre}</span>
+        </a>
+      ) : (
+        <button class="news" type="button" {...attrs}>
+          <span class="dot" aria-hidden="true"></span><span class="tag">news</span><span class="titre">{news.titre}</span>
+        </button>
+      );
+    })}
+  </div>
+
+  <div class="center">
+    <a class="ib" href="/menu" title="Menu" aria-label="Menu"><img src="/assets/brand/nav-home.svg" alt="" aria-hidden="true" width="29" height="29" /></a>
+    <button class="ib" type="button" title="Aléa du jour" aria-label="Aléa du jour" data-alea data-aleas={JSON.stringify(aleas)}><img src="/assets/brand/nav-star.svg" alt="" aria-hidden="true" width="27" height="27" /></button>
+    <ThemeToggle />
+    <a class="ib" href="/contact" title="Dessin & contact" aria-label="Dessin & contact"><img src="/assets/brand/nav-mountains.svg" alt="" aria-hidden="true" width="36" height="36" /></a>
+  </div>
+
+  <div class="right">
+    <MenuDropdown client:load sections={sections} secondary={secondary} />
+  </div>
+</header>
+
+{items.map((news, i) => !(news.mode === "lien" && news.url) && (
+  <Popup id={`popup-news-${i}`} seed={9} label={news.titre}>
+    <p class="popup-tag">news</p>
+    <p class="vjm-popup-title">{news.titre}</p>
+    <div style="font-size:17px"><Blocks blocks={news.blocks} /></div>
+    {news.url && (
+      <p class="vjm-prose" style="margin-top:18px;font-size:15px">
+        <a href={news.url} target="_blank" rel="noopener noreferrer">{news.url.replace(/^https?:\/\//, "")} ↗</a>
+      </p>
+    )}
+  </Popup>
+))}
+
+<script>
+  import "../scripts/popups";
+  import { inWindow, utcDay } from "../lib/news";
+
+  // À chaque page (le module ne s'exécute qu'une fois sous ClientRouter) : l'en-tête peut être neuf.
+  document.addEventListener("astro:page-load", () => {
+    const d = utcDay();
+    let found = false;
+    document.querySelectorAll<HTMLElement>(".news[data-news]").forEach((el) => {
+      const ok = !found && inWindow(el.dataset, d);
+      el.hidden = !ok;
+      found ||= ok;
+    });
+  });
+</script>
+
+<style>
+  header {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 100; height: var(--header-h);
+    display: flex; align-items: center; justify-content: space-between;
+    padding-left: var(--container-pad); padding-right: var(--container-pad);
+  }
+  .left { display: flex; align-items: center; min-width: 40px; position: relative; }
+  .right { display: flex; align-items: center; min-width: 40px; justify-content: flex-end; }
+  .name { padding: 0 2px; line-height: 0; opacity: 0.8; transition: opacity 0.25s; }
+  .name:hover { opacity: 1; }
+  /* Largeur fluide : lisible sur desktop sans empiéter sur les quatre commandes centrales
+     aux largeurs mobiles. */
+  .name img { width: clamp(180px, 20vw, 250px); height: auto; display: block; filter: var(--ink-invert); }
+
+  .center {
+    position: absolute; left: 50%; transform: translateX(-50%);
+    display: flex; align-items: center; gap: 4px;
+  }
+  .ib {
+    background: none; border: none; cursor: pointer; padding: 6px; line-height: 0;
+    min-width: 44px; min-height: 44px; color: var(--fg); opacity: 0.85; transition: opacity 0.25s;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .ib:hover { opacity: 1; }
+  .ib img { object-fit: contain; display: block; filter: var(--ink-invert); }
+
+  .news {
+    position: absolute; left: 2px; top: calc(100% - 4px);
+    display: flex; align-items: center; gap: 7px; max-width: 280px;
+    background: none; border: none; cursor: pointer; padding: 4px 0;
+    color: var(--fg); font-family: var(--font-digital); font-size: 12px;
+    letter-spacing: 0.06em; text-decoration: none; white-space: nowrap;
+    opacity: 0.75; transition: opacity 0.25s;
+  }
+  .news[hidden] { display: none; }
+  .news:hover { opacity: 1; }
+  .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--fg); flex-shrink: 0; animation: pulse 2.4s ease-in-out infinite; }
+  .tag { text-transform: uppercase; font-size: 0.9em; letter-spacing: 0.14em; }
+  .titre { overflow: hidden; text-overflow: ellipsis; text-decoration: underline; text-decoration-color: var(--fg-subtle); text-underline-offset: 0.2em; }
+
+  @media (max-width: 680px) {
+    header { padding-left: 10px; padding-right: 10px; }
+    .name img { width: clamp(100px, 20vw, 136px); }
+    .center { left: 55%; gap: 0; }
+    .news { max-width: 30vw; font-size: 11px; }
+  }
+  @media (max-width: 480px) {
+    .name img { width: clamp(72px, 22.5vw, 110px); }
+  }
+</style>

@@ -2,4 +2,4 @@ User-agent: *
 Allow: /
 Disallow: /admin/
 
-Sitemap: https://vjmvjmvjm.com/sitemap.xml
+Sitemap: https://vjmvjmvjm.com/sitemap-index.xml

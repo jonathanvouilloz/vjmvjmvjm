@@ -1,0 +1,70 @@
+---
+import { getCollection } from "astro:content";
+import Base from "../../layouts/Base.astro";
+import Header from "../../components/Header.astro";
+import Page from "../../components/Page.astro";
+import BackLink from "../../components/BackLink.astro";
+import { renderMarkdown } from "../../lib/content";
+import { withImageVariants } from "../../lib/images";
+import { abs, describe, person } from "../../lib/seo";
+
+export async function getStaticPaths() {
+  return (await getCollection("lecture")).filter((t) => t.data.publie).map((texte) => ({ params: { id: texte.id }, props: { texte } }));
+}
+const { texte } = Astro.props;
+const t = texte.data;
+---
+<Base title={`${t.titre} — Vania Jaikin Miyazaki`} path={`/lecture/${texte.id}`} description={describe(t.vignette.extrait, t.contexte)}
+  ld={{
+    "@type": "Article", headline: t.titre, description: describe(t.vignette.extrait, t.contexte), inLanguage: "fr",
+    url: abs(`/lecture/${texte.id}`), mainEntityOfPage: abs(`/lecture/${texte.id}`), author: await person(),
+  }}>
+  <Header />
+  <Page variant="prose">
+    <BackLink href="/lecture" label="retour au coin lecture" />
+    <article>
+      {t.contexte && t.contextePosition !== "bas" && <p class="contexte">{t.contexte}</p>}
+      <header>
+        {t.surtitre && <p class="surtitre">{t.surtitre}</p>}
+        <h1>{t.titre}</h1>
+      </header>
+      <div class="vjm-prose" set:html={withImageVariants(renderMarkdown(t.corps))} />
+      {t.notes && t.notes.length > 0 && (
+        <ol class="vjm-notes vjm-prose" aria-label="Notes">
+          {t.notes.map((n, i) => (
+            <li id={`note-${i + 1}`}>
+              <a href={`#ref-${i + 1}`} aria-label={`Retour à l'appel de note ${i + 1}`}>{i + 1}</a>
+              <div set:html={withImageVariants(renderMarkdown(n.md))} />
+            </li>
+          ))}
+        </ol>
+      )}
+      {t.contexte && t.contextePosition === "bas" && <p class="contexte bas">{t.contexte}</p>}
+    </article>
+  </Page>
+</Base>
+<script>
+  // Les ancres de notes défilent en douceur, sans écrire `#note-1` dans l'URL (comme avant).
+  // Posé sur l'article de chaque page (ClientRouter) et non sur le document : il doit annuler le
+  // clic avant que le routeur, à l'écoute du document, ne l'intercepte.
+  document.addEventListener("astro:page-load", () => {
+    document.querySelector("article")?.addEventListener("click", (e) => {
+      const a = (e.target as Element).closest('a[href^="#note-"], a[href^="#ref-"]');
+      if (!a) return;
+      e.preventDefault();
+      document.getElementById(a.getAttribute("href")!.slice(1))?.scrollIntoView({ behavior: "smooth", block: "center" });
+    });
+  });
+</script>
+<style>
+  article { font-size: clamp(1.08rem, 1.5vw, 1.24rem); }
+  header { margin-bottom: 2.2em; }
+  .surtitre {
+    font-family: var(--font-digital); font-size: 12px; letter-spacing: 0.16em; text-transform: uppercase;
+    color: var(--fg-muted); margin-bottom: 12px;
+  }
+  h1 { font-family: var(--font-heading); font-weight: 400; font-size: clamp(1.8rem, 3.6vw, 2.6rem); line-height: 1.15; }
+  .contexte { font-family: var(--font-digital); font-size: 13px; letter-spacing: 0.04em; color: var(--fg-muted); margin: 0 0 2.4em; }
+  .contexte.bas { margin: 3em 0 0; }
+  .vjm-notes a { font-family: var(--font-digital); text-decoration: none; flex-shrink: 0; }
+</style>

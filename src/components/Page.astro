@@ -1,0 +1,17 @@
+---
+// Gabarit d'une page de contenu : colonne centrée sous l'en-tête ; `prose` = colonne de lecture de 780px ;
+// `bleed` = pleine largeur sous l'en-tête (contact).
+interface Props { variant?: "default" | "prose" | "bleed" }
+const { variant = "default" } = Astro.props;
+---
+<main class:list={{ bleed: variant === "bleed" }}>
+  {variant === "prose" ? <div class="prose"><slot /></div> : <slot />}
+</main>
+<style>
+  main {
+    max-width: var(--container-max); margin: 0 auto;
+    padding: var(--page-top) var(--container-pad) var(--page-bottom);
+  }
+  main.bleed { max-width: none; margin: 0; padding: var(--header-h) 0 0; }
+  .prose { max-width: 780px; margin: 0 auto; }
+</style>

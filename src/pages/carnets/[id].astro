@@ -1,0 +1,26 @@
+---
+import Base from "../../layouts/Base.astro";
+import Lightbox from "../../components/Lightbox.astro";
+import { carnetsAll } from "../../lib/carnets";
+
+export async function getStaticPaths() {
+  // La liste de la grille /carnets, dans son ordre : ‹ › suivent la grille.
+  const list = await carnetsAll();
+  return list.map((c, i) => ({
+    params: { id: c.slug },
+    props: { c, prev: list[(i - 1 + list.length) % list.length], next: list[(i + 1) % list.length], count: list.length },
+  }));
+}
+const { c, prev, next, count } = Astro.props;
+---
+<Base title={`${c.title ?? c.slug} — Carnets de voyages — Vania Jaikin Miyazaki`} path="/carnets">
+  {/* Une page par image, sans texte propre : on indexe la grille, pas ses 117 pages. */}
+  <meta slot="head" name="robots" content="noindex" />
+  <Lightbox closeHref="/carnets" label={c.title ?? c.slug} prevHref={count > 1 ? `/carnets/${prev.slug}` : undefined} nextHref={count > 1 ? `/carnets/${next.slug}` : undefined}>
+    <img class="carnet" src={c.img.src} alt={c.title ?? ""} width={c.img.w} height={c.img.h} />
+    {c.title && <Fragment slot="legende">{c.title}</Fragment>}
+  </Lightbox>
+</Base>
+<style is:global>
+  .lb .carnet { max-width: 86vw; max-height: 80vh; width: auto; height: auto; display: block; }
+</style>

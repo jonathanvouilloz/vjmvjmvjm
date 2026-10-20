@@ -26,8 +26,8 @@ sys.stdout.reconfigure(encoding="utf-8", errors="replace")
 ROOT = Path(__file__).resolve().parent.parent
 SIGLES = ROOT / "JONATHAN" / "Sigles"
 ALEAS = ROOT / "JONATHAN" / "Aléas quotidien (_étoile_)"
-OUT = ROOT / "assets" / "brand"
-OUT_ALEAS = ROOT / "assets" / "aleas"
+OUT = ROOT / "public" / "assets" / "brand"
+OUT_ALEAS = ROOT / "public" / "assets" / "aleas"
 
 # Seuils de séparation encre / papier, en percentiles de luminance.
 # Le papier occupe l'écrasante majorité des pixels, l'encre les plus sombres.
