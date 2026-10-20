@@ -1,5 +1,91 @@
 # Feature — Migration vers Astro (site propre v1)
 
+> **Statut** : EN COURS (code fini, recette et bascule à faire par Jonathan) · **Livré** : 2026-10-20 sur la branche `astro`, non fusionnée · **Commits** : Phase 0 `2242955..da76276`, Phases 1 à 4.2 et 4.5 `a797882..ff75e3b`
+
+## Ce que ça fait
+Le site de Vania passe d'une application React mono-page (une seule URL, tout rendu en JS) à un site Astro statique : une vraie page HTML par contenu (film, album, texte, carnet, bio FR/EN, contact), avec title, description, canonical, Open Graph, JSON-LD, hreflang et sitemap générés. Les visiteurs et Google obtiennent des URL partageables, et le bouton retour reste dans le site. Vania continue d'éditer dans le CMS Sveltia, `content/` n'a pas changé de forme (sauf le champ facultatif `slug` des films).
+
+## Comment ça marche
+```
+content/*.json ─► src/content.config.ts (9 collections, loader json() strict, schémas zod)
+                       │
+public/assets ─► tools/build-images.mjs ─► src/generated/images.json (manifeste) + public/assets/_gen/
+                       │                         │
+                       ▼                         ▼
+        src/pages/*.astro (getStaticPaths)  ◄─ src/lib/{content,images,carnets,seo}.ts
+                       │   Base.astro : head SEO, JSON-LD, thème, ClientRouter
+                       ▼
+        astro build (format "file") ─► dist/*.html + sitemap-index.xml ─► tools/optimize-dist.py (audio 48k)
+```
+1. **Build** (`npm run build`) : `import-vector-sigles.py`, `build-images.mjs` (manifeste + variantes), `astro build`, `optimize-dist.py`. Une collection invalide (type faux, JSON cassé, slug Kinematik ou carnet en double) arrête le build avec le fichier en cause.
+2. **Pages** : `src/pages/` donne les URL du plan §3 (`/`, `/menu`, `/kinematik`, `/kinematik/{slug}`, `/films`, `/films/{id}`, `/carnets`, `/carnets/{slug}`, `/lecture`, `/lecture/{id}`, `/bio`, `/en/bio`, `/contact`, 404). 143 pages au dernier build.
+3. **URL sans slash final** : `build.format: "file"` produit `menu.html`, donc canoniques, liens internes et sitemap sont tous sans `/` final. Le service Netlify de ces « pretty URLs » (`/menu` vers `menu.html`, et `kinematik.html` à côté du dossier `kinematik/`) reste à vérifier sur une deploy preview.
+4. **Slug Kinematik** : `slug` du CMS, sinon `id`. **Slug carnet** : nom de fichier sans extension ; en cas de collision (`boule-disco`, `bourgeois`, `la-soupe` existent dans `carnets/` et `home/`), le second prend `{dossier}-{nom}` (ex. `home-boule-disco`) ; si cela collisionne encore, le build s'arrête (`src/lib/carnets.ts`). 117 tuiles, comme l'ancien site.
+5. **Navigation** : `ClientRouter` (View Transitions). L'en-tête et le thème sont persistés ; le thème (`localStorage` `vjm-theme`) est appliqué par un script inline avant le rendu et après chaque échange. Le lecteur audio **n'est pas persisté** : l'ancien `AudioPlayer` était monté dans `AlbumPage` et se coupait au démontage, la parité l'emporte (le §1 et le §6 du plan d'origine, plus bas, affirmaient le contraire à tort).
+6. **Lightbox en pages** (`Lightbox.astro`, `kinematik/[slug]`, `carnets/[id]`) : ‹ › naviguent en `replace`, ✕ revient en arrière si la lightbox a été ouverte pendant la visite (lit `history.state.index` du routeur), sinon va à la page parente. `/carnets/{slug}` est `noindex`, canonical vers `/carnets`, absent du sitemap.
+7. **Pop-ups sans URL** (aléa, news, « i » d'album, œil de la bio, menu ≡) : `src/scripts/popups.ts` + `src/lib/popup-history.ts` poussent une entrée d'historique à l'ouverture ; le retour la ferme. `Base.astro` pose avant le routeur un écouteur `popstate` qui appelle `window.__vjmPopstate`, pour que la pop-up passe avant le routeur.
+8. **Aléatoire et annonces** : photo d'accueil, portrait de bio, aléa du jour et fenêtre de dates des news sont résolus côté navigateur (`src/lib/news.ts`, partagé build/client) ; le HTML statique porte une valeur par défaut.
+9. **SEO** : `src/lib/seo.ts` (`describe`, `isoDuration`, `itemList`, `person`) ; `Base.astro` émet meta, OG, hreflang et JSON-LD. Sitemap : `@astrojs/sitemap` avec un filtre qui exclut `/carnets/*` et `/404`.
+10. **Contact** : `contact.astro` contient le vrai `<form name="contact" data-netlify="true">` (mêmes champs que l'ancien) et le canvas de dessin.
+
+## Carte du code
+> Mise à jour : 2026-10-20
+
+| Fichier | Rôle |
+|---|---|
+| `astro.config.mjs` | `site`, sortie statique, `build.format: "file"`, react + sitemap (filtre carnets/404) |
+| `src/content.config.ts` | 9 collections sur `content/`, loader `json()` strict, unicité des URL Kinematik |
+| `public/admin/config.yml` | schémas Sveltia, source des schémas zod |
+| `tools/build-images.mjs` | dimensions, variantes, vignettes, purge `public/assets/_gen/`, écrit `src/generated/images.json` |
+| `tools/optimize-dist.py` | audio 48k dans `dist/` après `astro build` |
+| `src/layouts/Base.astro` | head SEO, JSON-LD, hreflang, polices, script de thème, relais popstate, `ClientRouter` |
+| `src/components/Page.astro`, `Header.astro`, `Lightbox.astro`, `Popup.astro`, `BioPage.astro` | gabarit de page, en-tête persisté, lightbox, pop-ups (templates), bio FR/EN |
+| `src/pages/**` | une page par URL du plan, `getStaticPaths` sur les collections |
+| `src/islands/AudioPlayer.jsx`, `Playlists.jsx` | lecteur d'album (non persisté) et lecteurs de playlist |
+| `src/islands/DotField.jsx`, `MenuDropdown.jsx` | semis du menu, menu ≡ |
+| `src/lib/content.ts` | Markdown, lecteurs playlist/vidéo, images Markdown via le manifeste (ex `tools/build-content.mjs`) |
+| `src/lib/carnets.ts` | liste ordonnée des carnets, slugs et règle de collision |
+| `src/lib/seo.ts`, `images.ts`, `news.ts`, `random.ts`, `sigles.ts` | SEO, accès au manifeste, fenêtre des news, aléa déterministe, sigles |
+| `src/lib/popup-history.ts`, `src/scripts/popups.ts` | pile d'historique et ouverture des pop-ups |
+| `src/styles/global.css`, `menu-dropdown.css` | tokens fusionnés, styles du menu |
+| `tests/site.test.mjs`, `popup-history.test.mjs`, `news.test.mjs` | 36 tests, ceux sur les pages lisent `dist/` |
+
+### Décisions clés
+- Même repo, branche `astro`, `content/` inchangé hors `slug` Kinematik (détail daté → DECISIONS.md).
+- Pipeline d'images sharp conservé plutôt que `astro:assets`.
+- `build.format: "file"` plutôt que `trailingSlash: "always"` — évite de réécrire tous les liens internes.
+- Lecteur audio non persisté entre pages — parité avec l'ancien site.
+- Slug carnet en collision : `{dossier}-{nom}` — URL stable, ordre inchangé.
+- Ancien pipeline supprimé (`precompile.mjs`, `tools/build-content.mjs`, `design-extract/`, `build.py`, `tools/fetch-thumbs.py`, `tools/package-netlify.py`, Babel) ; l'historique git le garde.
+
+## Comment débuguer
+- **Par où entrer** : `npm run build`, puis `dist/{page}.html` ; en dev `npm run dev` (ne recharge pas un JSON de `content/` modifié : relancer). Pop-ups : `src/lib/popup-history.ts`. Lightbox : le `<script>` de `Lightbox.astro`.
+- **Ce qu'on observe** : `dist/sitemap-index.xml`, canonical et JSON-LD de chaque page, `src/generated/images.json`, `npm test` (les tests de pages lisent `dist/`).
+- **Pannes connues** : build qui s'arrête avec un nom de fichier → JSON refusé par le schéma zod ou slug en double (corriger dans le CMS) · tests « skipped » → `dist/` absent, lancer `npm run build` · image absente d'une grille carnets → absente du manifeste (`carnets.ts` l'écarte sans avertir).
+- **Pièges** : un script de composant ne tourne qu'une fois sous `ClientRouter` (délégation sur `document`) · le thème est réappliqué sur `astro:after-swap` · la fermeture de lightbox dépend de `history.state.index`, interne à Astro (un test le surveille) · pas de `stopPropagation` dans le menu (cause de rechargements complets) · un fichier déposé par le CMS dans l'ancien `assets/` pendant la migration est à déplacer dans `public/assets/` à la fusion.
+
+## Configuration
+Aucune variable d'env. Node `>=22.22.0` (champ `engines` de `package.json`, `NODE_VERSION` de `netlify.toml`), Python 3.13 pour les scripts de build. Formulaire Netlify `contact` (nom conservé). `.github/workflows/publier.yml` inchangé.
+
+## Tests et vérifications
+| Vérif | Commande | Résultat réel |
+|---|---|---|
+| Build complet | `npm run build` | relancé 2026-10-20 : OK, 143 pages |
+| Tests | `npm test` | relancé après build : 36 pass, 0 fail, 0 skipped |
+| Tests sans `dist/` | `npm test` | les tests de pages sont ignorés (skipped) |
+| Navigation, lightbox, pop-ups en navigateur | Chrome headless (tâches 5 à 7) | rapporté, non relancé |
+| Recette visuelle (4.1) | manuelle | non faite |
+| Pretty URLs Netlify, envoi réel du formulaire, Lighthouse, validateur Schema.org | deploy preview | non faits |
+
+## Limites et dettes
+- **À faire (Jonathan, déjà dans `cerveau/10-Projets/wania/wania-human.md`)** : 4.1 recette visuelle (clair/sombre, mobile, tactile, audio, CMS), 4.3 fusion dans `main` (`git merge main` d'abord), 4.4 Search Console (soumettre `sitemap-index.xml`), vérifier une deploy preview Netlify.
+- Écarts au plan : audio non persisté (voir ci-dessus) ; `tools/fetch-thumbs.py` supprimé, donc plus de récupération automatique des posters Vimeo pour un nouveau film.
+- `describe()` (`seo.ts`) : coupe toujours le dernier mot, peut dépasser 160 caractères, retire `_` et `*` dans les mots ; `Person` répété au lieu d'une référence `@id` ; les `PodcastEpisode` d'un album partagent la même `url`.
+- Mineurs reportés : `/bio` écrit toujours `vjm-bio-lang` (remet en FR) ; thème sombre perdu à la navigation si `localStorage` lève ; tuile Kinematik qui pivote au survol sous 760 px ; `seededRandom` dupliqué dans `DotField.jsx` ; menu ≡ inerte avant hydratation ; pas de test pour la branche « page identique, href différent » de `popup-history` ; `requestClose(then)` perd `then` pendant une fermeture.
+- Les fiches `iteration-5`, `iteration-6`, `iteration-7` et `maquette-iteration-2` décrivent l'ancien pipeline : toute référence à `precompile.mjs`, `tools/build-content.mjs`, `design-extract/`, `window.CONTENT` ou Babel y est historique. Fichiers racine ignorés encore présents : `index.html`, `waniushka.bundle.js`, `waniushka-netlify-rc5.zip`, `design.tar.gz`.
+
+---
+
 ## Etat session 2026-10-20 (Phase 0)
 
 **Fait :** Phase 0 sur la branche `astro`.
@@ -30,29 +116,9 @@
 
 ---
 
-## Carte du code
-> Mise a jour : 2026-10-20
-
-| Fichier | Role |
-|---------|------|
-| `design-extract/site-minimalist-portoflio/project/waniushka-app.jsx` | toutes les pages, `App` (navigation par état, sans URL), `DotField`, contact — à éclater en pages `.astro` + îles |
-| `design-extract/site-minimalist-portoflio/project/waniushka-components.jsx` | lit `window.CONTENT` au niveau module ; `Popup`, `MediaOverlay`, `MasonryGrid`, `AudioPlayer`, `Blocks` — à passer en props |
-| `design-extract/site-minimalist-portoflio/project/Waniushka Portfolio.html` | gabarit : `:root`, SEO, JSON-LD, copie statique du formulaire Netlify |
-| `precompile.mjs` | Babel + injection contenu/SEO + copie `dist/` — disparaît |
-| `tools/build-content.mjs` | Markdown → HTML, lecteurs playlist/vidéo — logique à reprendre dans `src/lib/content.ts` |
-| `tools/build-images.mjs` | dimensions, variantes, vignettes, purge `public/assets/_gen/` ; lancé seul, écrit `src/generated/images.json` |
-| `public/admin/config.yml` | schémas Sveltia, source des schémas zod |
-| `src/content.config.ts` | collections + loader `json()` strict + unicité des URL Kinematik |
-| `astro.config.mjs` | site, sortie statique, react + sitemap |
-| `tests/site.test.mjs` | 33 tests, surtout des regex sur la source JSX — à réécrire sur `dist/` |
-
-### Decisions cles
-- Même repo, branche `astro` ; `content/` ne change pas de forme pendant la migration.
-- Pipeline d'images sharp conservé plutôt que `astro:assets` (pas de migration des chemins du CMS).
-- Slug Kinematik : champ `slug` facultatif, repli sur `id` (seule exception à « `content/` ne change pas »).
-- Loader `json()` maison plutôt que `file` d'Astro, qui laisse passer une collection vide.
-
 ---
+
+## Plan d'origine (référence historique ; le code fait foi)
 
 Objectif : passer du site React mono-page (une seule URL, tout rendu en JS) à un site Astro
 statique, **une vraie page HTML par contenu**, SEO propre de A à Z. Le CMS (Sveltia) et le
@@ -70,7 +136,7 @@ contenu restent identiques pour Vania.
 | Les chemins d'image restent `assets/…` dans les JSON ; un helper les rend absolus (`/assets/…`) au rendu | En multi-pages, un chemin relatif casse dès `/films/x` ; on ne réécrit pas le contenu | Réécrire toutes les valeurs du CMS |
 | Pipeline d'images existant (`tools/build-images.mjs`, sharp) conservé | Il marche déjà avec des chemins texte venus du CMS, purge et vignettes comprises | `astro:assets` (impose des chemins relatifs au fichier JSON → migration de contenu) |
 | Composants interactifs repris en **îles React** (`@astrojs/react`), le reste en `.astro` | Moins de réécriture, comportements tactiles déjà débogués conservés | Tout réécrire en vanilla d'emblée |
-| `ClientRouter` (View Transitions) + `transition:persist` sur le lecteur audio et l'en-tête | Aujourd'hui l'audio continue quand on change de page ; en MPA il se couperait | Rechargement complet (perd l'audio et les fondus) |
+| `ClientRouter` (View Transitions) + `transition:persist` sur l'en-tête | Fondus et en-tête stable. **Correction** : le lecteur audio n'est pas persisté, l'ancien `AudioPlayer` vivait dans `AlbumPage` et se coupait au démontage (parité) | Rechargement complet (perd les fondus) |
 
 ## 2. État vérifié avant migration (2026-10-20)
 
@@ -188,7 +254,7 @@ Points structurants :
 
 ## 6. Risques
 
-- **Audio coupé en navigation** si `transition:persist` mal posé — à tester tôt (phase 2.1).
+- ~~Audio coupé en navigation~~ : sans objet, l'audio ne continuait pas non plus dans l'ancien site (voir « Comment ça marche » 5).
 - **Doublons de tokens CSS** (`:root` du gabarit + `useGlobalTypo`) : en fusionnant, vérifier que rien ne change visuellement (captures avant/après).
 - **Builds Netlify** : chaque déploiement compte sur le plan Free ; les previews de la branche aussi. Vérifier le réglage des deploy previews avant de pousser `astro`.
 - **Modif CMS pendant la migration** sur un champ que les schémas zod refusent → le build de la branche casse ; c'est voulu (on le voit avant la bascule).

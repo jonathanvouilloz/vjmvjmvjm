@@ -8,7 +8,7 @@
 | Itération 2 → 4 — maquette MVP fidèle aux wireframes | DONE | docs/features/maquette-iteration-2.md |
 | Itération 5 — contenu éditable + Coin lecture + news + bio FR/EN | DONE (CMS à activer) | docs/features/iteration-5-contenu-editable.md |
 | Itération 6 — schémas CMS figés (playlists, textes riches, vignettes, « i » Kinematik) | DONE | docs/features/iteration-6-schemas-cms.md |
-| Site propre v1 — migration Astro (une URL par contenu, SEO) | EN COURS (Phase 0 faite) | docs/features/migration-astro.md |
+| Site propre v1 — migration Astro (une URL par contenu, SEO) | EN COURS (code fait ; recette 4.1, fusion 4.3, Search Console 4.4 à faire par Jonathan) | docs/features/migration-astro.md |
 
 ## Cadre itération 2
 - Objectif : mettre en réel, en **maquette MVP**, ce que Vania a dessiné (wireframes dossier `JONATHAN/`).
@@ -19,13 +19,13 @@
   Le message client ci-dessous dit encore « de bord » — c'est une citation d'archive, ne pas la réécrire.
 
 ## Build & preview
-- Build : `node precompile.mjs` (travail) / `node precompile.mjs --prod` (→ `dist/`)
-- Preview : `python tools/serve.py 8123` puis `http://localhost:8123/index.html`
-  (⚠ **pas** `python -m http.server`, qui ignore les requêtes `Range` : chaque saut audio ramène la lecture à zéro. `file://` reste bloqué par l'extension Chrome.)
-- Preview de `dist/` : `python tools/serve.py 8124 dist`
-- Déploiement : push sur `main` → Netlify lance `npm run build` et publie `dist/` (`netlify.toml`). Le CMS (`/admin/`) commite sur `main` lui aussi.
-- Images : listées dans `content/` (CMS) ; le build les prépare (`tools/build-images.mjs` → `assets/_gen/`). Import en masse depuis `JONATHAN/` : `python tools/import-images.py`, puis rebuild
-- Tests : `npm test`
+- Build : `npm run build` (images, `astro build`, audio 48k) → `dist/`
+- Dev : `npm run dev` ; preview de `dist/` : `npm run preview`
+- Audio : `astro dev`/`preview` peuvent ignorer les requêtes `Range` ; pour tester les sauts audio sur `dist/`, `python tools/serve.py 8124 dist`
+- Déploiement : push sur `main` → Netlify lance `npm run build` et publie `dist/` (`netlify.toml`, Node >=22.22.0). Le CMS (`/admin/`) enregistre sur la branche `content`, `publier.yml` la verse dans `main`.
+- Images : listées dans `content/` (CMS) ; le build les prépare (`tools/build-images.mjs` → `public/assets/_gen/` et `src/generated/images.json`). Import en masse depuis `JONATHAN/` : `python tools/import-images.py`, puis rebuild
+- Tests : `npm test` (les tests de pages lisent `dist/` et sont ignorés s'il est absent)
+- Le pipeline d'avant la migration (`precompile.mjs`, `waniushka.bundle.js`) a disparu ; les fiches d'itération 2 à 7 le décrivent encore, à titre historique.
 - Blocages hors code (Vimeo 401, poster noir, titres, poids de `dist/`) → `cerveau/10-Projets/wania/wania-human.md`
 
 ---
