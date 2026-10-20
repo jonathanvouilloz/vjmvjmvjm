@@ -1,0 +1,12 @@
+---
+import Base from "../layouts/Base.astro";
+import Header from "../components/Header.astro";
+import BackLink from "../components/BackLink.astro";
+---
+<Base title="Page introuvable" path="/404">
+  <Header />
+  <main style="max-width:var(--container-max);margin:0 auto;padding:var(--page-top) var(--container-pad) var(--page-bottom)">
+    <BackLink href="/menu" label="Menu" />
+    <p>Cette page n'existe pas.</p>
+  </main>
+</Base>

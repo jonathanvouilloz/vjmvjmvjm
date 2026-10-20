@@ -1,0 +1,40 @@
+/* Menu déroulant du ≡ (île MenuDropdown). Les survols sont en CSS ; les valeurs reprennent
+   les styles inline de l'ancien SectionTitleButton / SecondaryLinks. */
+.vjm-md-btn {
+  background: none; border: none; cursor: pointer; padding: 6px; line-height: 0;
+  min-width: 44px; min-height: 44px; color: var(--fg); opacity: 0.85; transition: opacity 0.25s;
+  display: flex; align-items: center; justify-content: center;
+}
+.vjm-md-btn:hover, .vjm-md-btn[data-active] { opacity: 1; }
+.vjm-md-btn svg { transition: transform 0.3s ease; }
+
+.vjm-md-backdrop { position: fixed; inset: 0; z-index: 200; }
+.vjm-md-panel {
+  position: absolute; top: calc(var(--header-h) - 10px); right: var(--container-pad);
+  background: var(--bg); border: 1px solid var(--border); padding: 22px 26px;
+  display: flex; flex-direction: column; align-items: flex-end; gap: 14px;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.06);
+  opacity: 0; transform: translateY(-6px);
+  transition: opacity 0.25s ease, transform 0.25s ease;
+}
+.vjm-md-panel[data-show] { opacity: 1; transform: translateY(0); }
+
+.vjm-md-item {
+  color: var(--fg); text-decoration: none; font-family: var(--font-menu); font-weight: 400;
+  font-size: 1.02rem; letter-spacing: 0.04em; display: flex; align-items: center; gap: 12px;
+  white-space: nowrap; opacity: 0; transform: translateY(10px);
+  transition: opacity 0.4s ease, transform 0.4s ease, letter-spacing 0.25s;
+}
+.vjm-md-item[data-show] { opacity: 0.8; transform: translateY(0); }
+.vjm-md-item[data-show]:hover { opacity: 1; letter-spacing: 0.09em; }
+.vjm-md-sigle { height: 0.8em; width: auto; display: block; opacity: 0.75; filter: var(--ink-invert); }
+
+.vjm-md-rule { width: 100%; height: 1px; background: var(--border); margin-top: 4px; }
+.vjm-md-secondary { display: flex; align-items: center; gap: 18px; opacity: 0; transition: opacity 0.4s ease 0.2s; }
+.vjm-md-secondary[data-show] { opacity: 1; }
+.vjm-md-secondary a {
+  color: var(--fg-muted); text-decoration: none; font-family: var(--font-body);
+  font-size: 17px; letter-spacing: 0.07em; transition: color 0.25s;
+}
+.vjm-md-secondary a:hover { color: var(--fg); }
+.vjm-md-dot { color: var(--fg-subtle); font-size: 16px; }

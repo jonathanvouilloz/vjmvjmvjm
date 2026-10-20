@@ -1,0 +1,98 @@
+---
+/* En-tête constant sur toutes les pages : nom (+ news) à gauche · maison / étoile / thème /
+   montagne au centre · ≡ à droite. Les anciens callbacks d'état sont des liens. */
+import { getCollection } from "astro:content";
+import MenuDropdown from "../islands/MenuDropdown.jsx";
+import ThemeToggle from "./ThemeToggle.astro";
+import { SECTIONS_MENU, sigleSource } from "../lib/sigles";
+
+// Annonce active (actif + fenêtre de dates), la première de la liste
+const today = new Date().toISOString().slice(0, 10);
+const news = (await getCollection("news")).map((n) => n.data)
+  .find((n) => n.actif && (!n.debut || n.debut <= today) && (!n.fin || today <= n.fin));
+
+const sections = SECTIONS_MENU.map((s) => ({
+  ...s,
+  href: `/${s.id}`,
+  sigles: { left: sigleSource(s.id, true), right: sigleSource(s.id, false) },
+}));
+const secondary = [{ label: "contact", href: "/contact" }, { label: "bio", href: "/bio" }];
+---
+<header>
+  <div class="left">
+    <a href="/bio" class="name" title="Bio" aria-label="Vania Jaikin Miyazaki">
+      <!-- Nom en capitales dessiné par Vania et détouré ; l'encre noire s'inverse en sombre. -->
+      <img src="/assets/brand/nom-manuscrit.png" alt="Vania Jaikin Miyazaki" />
+    </a>
+    {news && (news.mode === "lien" && news.url ? (
+      <a class="news" href={news.url} target="_blank" rel="noopener noreferrer">
+        <span class="dot" aria-hidden="true"></span><span class="tag">news</span><span class="titre">{news.titre}</span>
+      </a>
+    ) : (
+      <button class="news" type="button" data-news>
+        <span class="dot" aria-hidden="true"></span><span class="tag">news</span><span class="titre">{news.titre}</span>
+      </button>
+    ))}
+  </div>
+
+  <div class="center">
+    <a class="ib" href="/menu" title="Menu" aria-label="Menu"><img src="/assets/brand/nav-home.svg" alt="" aria-hidden="true" width="29" height="29" /></a>
+    <button class="ib" type="button" title="Aléa du jour" aria-label="Aléa du jour" data-alea><img src="/assets/brand/nav-star.svg" alt="" aria-hidden="true" width="27" height="27" /></button>
+    <ThemeToggle />
+    <a class="ib" href="/contact" title="Dessin & contact" aria-label="Dessin & contact"><img src="/assets/brand/nav-mountains.svg" alt="" aria-hidden="true" width="36" height="36" /></a>
+  </div>
+
+  <div class="right">
+    <MenuDropdown client:load sections={sections} secondary={secondary} />
+  </div>
+</header>
+
+<style>
+  header {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 100; height: var(--header-h);
+    display: flex; align-items: center; justify-content: space-between;
+    padding-left: var(--container-pad); padding-right: var(--container-pad);
+  }
+  .left { display: flex; align-items: center; min-width: 40px; position: relative; }
+  .right { display: flex; align-items: center; min-width: 40px; justify-content: flex-end; }
+  .name { padding: 0 2px; line-height: 0; opacity: 0.8; transition: opacity 0.25s; }
+  .name:hover { opacity: 1; }
+  /* Largeur fluide : lisible sur desktop sans empiéter sur les quatre commandes centrales
+     aux largeurs mobiles. */
+  .name img { width: clamp(180px, 20vw, 250px); height: auto; display: block; filter: var(--ink-invert); }
+
+  .center {
+    position: absolute; left: 50%; transform: translateX(-50%);
+    display: flex; align-items: center; gap: 4px;
+  }
+  .ib {
+    background: none; border: none; cursor: pointer; padding: 6px; line-height: 0;
+    min-width: 44px; min-height: 44px; color: var(--fg); opacity: 0.85; transition: opacity 0.25s;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .ib:hover { opacity: 1; }
+  .ib img { object-fit: contain; display: block; filter: var(--ink-invert); }
+
+  .news {
+    position: absolute; left: 2px; top: calc(100% - 4px);
+    display: flex; align-items: center; gap: 7px; max-width: 280px;
+    background: none; border: none; cursor: pointer; padding: 4px 0;
+    color: var(--fg); font-family: var(--font-digital); font-size: 12px;
+    letter-spacing: 0.06em; text-decoration: none; white-space: nowrap;
+    opacity: 0.75; transition: opacity 0.25s;
+  }
+  .news:hover { opacity: 1; }
+  .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--fg); flex-shrink: 0; animation: pulse 2.4s ease-in-out infinite; }
+  .tag { text-transform: uppercase; font-size: 0.9em; letter-spacing: 0.14em; }
+  .titre { overflow: hidden; text-overflow: ellipsis; text-decoration: underline; text-decoration-color: var(--fg-subtle); text-underline-offset: 0.2em; }
+
+  @media (max-width: 680px) {
+    header { padding-left: 10px; padding-right: 10px; }
+    .name img { width: clamp(100px, 20vw, 136px); }
+    .center { left: 55%; gap: 0; }
+    .news { max-width: 30vw; font-size: 11px; }
+  }
+  @media (max-width: 480px) {
+    .name img { width: clamp(72px, 22.5vw, 110px); }
+  }
+</style>
