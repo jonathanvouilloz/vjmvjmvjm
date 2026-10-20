@@ -5,6 +5,8 @@ import { getCollection, getEntry } from "astro:content";
 import { asset } from "../lib/content";
 import MenuDropdown from "../islands/MenuDropdown.jsx";
 import ThemeToggle from "./ThemeToggle.astro";
+import Popup from "./Popup.astro";
+import Blocks from "./Blocks.astro";
 import { SECTIONS_MENU, sigleSource } from "../lib/sigles";
 
 /* Toutes les annonces actives sont rendues avec leur fenêtre de dates ; le navigateur retient
@@ -32,8 +34,8 @@ const secondary = [{ label: "contact", href: "/contact" }, { label: "bio", href:
       <!-- Nom en capitales dessiné par Vania et détouré ; l'encre noire s'inverse en sombre. -->
       <img src="/assets/brand/nom-manuscrit.png" alt="Vania Jaikin Miyazaki" />
     </a>
-    {items.map((news) => {
-      const attrs = { "data-news": "", "data-debut": news.debut, "data-fin": news.fin, hidden: news !== first };
+    {items.map((news, i) => {
+      const attrs = { "data-news": i, "data-debut": news.debut, "data-fin": news.fin, hidden: news !== first };
       return news.mode === "lien" && news.url ? (
         <a class="news" href={news.url} target="_blank" rel="noopener noreferrer" {...attrs}>
           <span class="dot" aria-hidden="true"></span><span class="tag">news</span><span class="titre">{news.titre}</span>
@@ -58,7 +60,22 @@ const secondary = [{ label: "contact", href: "/contact" }, { label: "bio", href:
   </div>
 </header>
 
+{items.map((news, i) => news.mode !== "lien" && (
+  <Popup id={`popup-news-${i}`} seed={9} label={news.titre}>
+    <p class="popup-tag">news</p>
+    <p class="vjm-popup-title">{news.titre}</p>
+    <div style="font-size:17px"><Blocks blocks={news.blocks} /></div>
+    {news.url && (
+      <p class="vjm-prose" style="margin-top:18px;font-size:15px">
+        <a href={news.url} target="_blank" rel="noopener noreferrer">{news.url.replace(/^https?:\/\//, "")} ↗</a>
+      </p>
+    )}
+  </Popup>
+))}
+
 <script>
+  import "../scripts/popups";
+
   // À chaque page (le module ne s'exécute qu'une fois sous ClientRouter) : l'en-tête peut être neuf.
   document.addEventListener("astro:page-load", () => {
     const d = new Date().toISOString().slice(0, 10);

@@ -1,11 +1,12 @@
 ---
 /* La bio « sérieuse » est sur la page, en français ou en anglais (deux URL : /bio et /en/bio).
-   L'autre — la vraie, dit Vania — attend derrière un œil dessiné ; sa pop-up arrive en Tâche 7. */
+   L'autre — la vraie, dit Vania — attend derrière un œil dessiné ; sa pop-up est rendue plus bas. */
 import { getEntry } from "astro:content";
 import Base from "../layouts/Base.astro";
 import Header from "../components/Header.astro";
 import Page from "../components/Page.astro";
 import Blocks from "../components/Blocks.astro";
+import Popup from "../components/Popup.astro";
 import { asset } from "../lib/content";
 import { image } from "../lib/images";
 
@@ -48,6 +49,11 @@ const langs = [{ code: "fr", label: "FR", href: "/bio" }, { code: "en", label: "
       )}
     </div>
   </Page>
+  {site.bioOeilVisible && (
+    <Popup id="popup-bio-perso" seed={5} maxWidth={720} label="Bio">
+      <div lang={lang} style="font-size:clamp(1.05rem, 1.5vw, 1.2rem)"><Blocks blocks={textes.perso} /></div>
+    </Popup>
+  )}
   <!-- La langue de la bio sert aussi aux playlists des albums (Playlists.jsx). Rejoué à chaque
        visite : sans data-astro-rerun, le ClientRouter ne relance pas un script déjà vu (fr → en → fr). -->
   <script is:inline data-astro-rerun define:vars={{ lang }}>

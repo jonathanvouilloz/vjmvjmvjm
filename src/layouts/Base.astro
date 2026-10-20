@@ -56,6 +56,8 @@ const fonts = `https://fonts.googleapis.com/css2?${menuFamily}family=Manrope:wgh
         document.addEventListener("astro:after-swap", theme);
       })();
     </script>
+    <!-- Avant le routeur (voir src/lib/popup-history.ts) : premier à voir popstate. -->
+    <script is:inline>addEventListener("popstate", function (e) { if (window.__vjmPopstate) window.__vjmPopstate(e); });</script>
     <ClientRouter />
     <slot name="head" />
   </head>

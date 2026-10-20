@@ -1,6 +1,8 @@
 /* Bouton ≡ et son menu déroulant, ancré sous le bouton en haut à droite. Panneau posé sur la
    page, qui reste visible dessous (Vania veut le menu « juste en-dessous, sans changer de page »). */
 import { useEffect, useState } from "react";
+import { navigate } from "astro:transitions/client";
+import { openEntry, requestClose } from "../lib/popup-history";
 import "../styles/menu-dropdown.css";
 
 const BtnIcon = ({ open }) => (
@@ -27,32 +29,32 @@ export default function MenuDropdown({ sections, secondary }) {
   const [open, setOpen] = useState(false);
   const [show, setShow] = useState(false);
 
+  // Ouvert = une entrée d'historique : « retour » le referme. Échap passe par src/scripts/popups.ts.
   useEffect(() => {
     if (!open) { setShow(false); return; }
+    openEntry(() => setOpen(false));
     const raf = requestAnimationFrame(() => requestAnimationFrame(() => setShow(true)));
-    const onKey = (e) => { if (e.key === "Escape") setOpen(false); };
-    window.addEventListener("keydown", onKey);
-    return () => { cancelAnimationFrame(raf); window.removeEventListener("keydown", onKey); };
+    return () => cancelAnimationFrame(raf);
   }, [open]);
 
-  // L'en-tête est persisté d'une page à l'autre : on referme après navigation, comme l'ancien go().
-  useEffect(() => {
-    const close = () => setOpen(false);
-    document.addEventListener("astro:after-swap", close);
-    return () => document.removeEventListener("astro:after-swap", close);
-  }, []);
+  // Un lien referme d'abord (retour arrière) puis navigue : pas d'entrée orpheline dans l'historique.
+  const onLink = (e) => {
+    const a = e.target.closest("a");
+    if (!a || e.defaultPrevented || e.button || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+    e.preventDefault();
+    requestClose(() => navigate(a.href));
+  };
 
   return (
     <>
       <button type="button" className="vjm-md-btn" title="Menu" aria-label="Menu" aria-expanded={open}
-        data-active={open || undefined} onClick={() => setOpen((v) => !v)}>
+        data-active={open || undefined} onClick={() => (open ? requestClose() : setOpen(true))}>
         <BtnIcon open={open} />
       </button>
       {open && (
         /* conteneur transparent plein écran : capte le clic extérieur sans masquer la page */
-        /* pas de stopPropagation sur le panneau : le clic d'un lien doit remonter jusqu'au ClientRouter */
-        <div className="vjm-md-backdrop" onClick={(e) => { if (e.target === e.currentTarget) setOpen(false); }}>
-          <nav className="vjm-md-panel" data-show={show || undefined}>
+        <div className="vjm-md-backdrop" onClick={(e) => { if (e.target === e.currentTarget) requestClose(); }}>
+          <nav className="vjm-md-panel" data-show={show || undefined} onClick={onLink}>
             {sections.map((it, i) => (
               <a key={it.id} href={it.href} className="vjm-md-item" data-show={show || undefined}
                 style={{ transitionDelay: `${i * 0.04}s, ${i * 0.04}s, 0s` }}>

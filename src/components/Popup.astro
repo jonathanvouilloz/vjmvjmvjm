@@ -1,0 +1,16 @@
+---
+/* Contenu d'une pop-up, rendu en dur dans un <template> ; src/scripts/popups.ts l'ouvre au clic.
+   Carte à contour dessiné, légèrement penchée, comme l'ancien `Popup sketch`. */
+import SketchFrame from "./SketchFrame.astro";
+import { seededRandom } from "../lib/content";
+
+interface Props { id: string; seed?: number; maxWidth?: number; label: string }
+const { id, seed = 1, maxWidth = 880, label } = Astro.props;
+const tilt = ((seededRandom(seed * 3) - 0.5) * 1.2).toFixed(2);
+---
+<template id={id} data-label={label}>
+  <div class="vjm-popup-card" style={`--tilt:${tilt}deg;max-width:${maxWidth}px`}>
+    <SketchFrame seed={seed} />
+    <div class="vjm-popup-body vjm-scroll"><slot /></div>
+  </div>
+</template>

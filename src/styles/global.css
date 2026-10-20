@@ -111,3 +111,49 @@ a { color: inherit; }
   from { opacity: 0; transform: translateY(10px); }
   to { opacity: 1; transform: translateY(0); }
 }
+
+/* ── Pop-ups (src/scripts/popups.ts) : carte à contour dessiné posée sur la page ── */
+.vjm-popup {
+  position: fixed; inset: 0; z-index: 300; padding: clamp(16px, 4vw, 40px);
+  display: flex; align-items: center; justify-content: center;
+  background: rgba(0, 0, 0, 0); backdrop-filter: blur(2px); transition: background 0.35s ease;
+}
+.vjm-popup[data-show] { background: rgba(0, 0, 0, 0.55); }
+.vjm-popup-card {
+  position: relative; width: 100%; background: var(--bg); color: var(--fg);
+  opacity: 0; transform: translateY(12px) rotate(var(--tilt, 0deg));
+  transition: opacity 0.35s ease, transform 0.35s ease;
+}
+.vjm-popup[data-show] .vjm-popup-card { opacity: 1; transform: translateY(0) rotate(var(--tilt, 0deg)); }
+.vjm-popup-body {
+  padding: clamp(40px, 5vw, 60px) clamp(24px, 5vw, 64px);
+  max-height: min(82vh, 900px); overflow-y: auto; overscroll-behavior: contain;
+}
+.vjm-popup-close {
+  position: absolute; top: 10px; right: 12px; z-index: 1; width: 40px; height: 40px;
+  background: none; border: none; cursor: pointer; color: var(--fg); font-size: 24px; line-height: 1; opacity: 0.6;
+}
+.vjm-popup-title { font-family: var(--font-heading); font-size: clamp(1.25rem, 2.6vw, 1.7rem); margin-bottom: 22px; padding-right: 28px; }
+
+/* Aléa du jour : écran plein, l'écriture de Vania détourée (encre inversée en sombre) */
+.vjm-alea {
+  position: fixed; inset: 0; z-index: 400; background: var(--bg); color: var(--fg);
+  display: flex; align-items: center; justify-content: center; padding: clamp(24px, 6vw, 80px);
+  opacity: 0; transition: opacity 0.35s ease;
+}
+.vjm-alea[data-show] { opacity: 1; }
+.vjm-alea-close {
+  position: absolute; top: 18px; right: 20px; width: 44px; height: 44px;
+  background: none; border: none; color: var(--fg); cursor: pointer; font-size: 28px; line-height: 1; opacity: 0.68;
+}
+.vjm-alea img {
+  display: block; margin: 0 auto; max-width: 88vw; max-height: 76vh; width: auto; height: auto;
+  filter: var(--ink-invert) blur(10px); opacity: 0; transform: translateY(12px);
+  transition: opacity 0.9s cubic-bezier(0.22, 0.61, 0.36, 1), filter 0.9s cubic-bezier(0.22, 0.61, 0.36, 1), transform 0.9s cubic-bezier(0.22, 0.61, 0.36, 1);
+}
+.vjm-alea[data-show] img { filter: var(--ink-invert) blur(0px); opacity: 1; transform: translateY(0); }
+@media (prefers-reduced-motion: reduce) {
+  .vjm-alea { transition: none; }
+  .vjm-alea img { transition: opacity 0.15s linear; filter: var(--ink-invert); transform: none; }
+}
+.popup-tag { font-family: var(--font-digital); font-size: 11px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--fg-muted); margin-bottom: 10px; }
