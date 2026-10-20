@@ -60,7 +60,7 @@ const secondary = [{ label: "contact", href: "/contact" }, { label: "bio", href:
   </div>
 </header>
 
-{items.map((news, i) => news.mode !== "lien" && (
+{items.map((news, i) => !(news.mode === "lien" && news.url) && (
   <Popup id={`popup-news-${i}`} seed={9} label={news.titre}>
     <p class="popup-tag">news</p>
     <p class="vjm-popup-title">{news.titre}</p>

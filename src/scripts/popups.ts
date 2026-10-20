@@ -44,9 +44,8 @@ function openAlea(btn: HTMLElement) {
   const close = closeButton("vjm-alea-close");
   const img = document.createElement("img");
   img.src = src; img.alt = "Aléa du jour";
-  img.addEventListener("click", (e) => e.stopPropagation());
   back.append(close, img);
-  back.addEventListener("click", () => requestClose());
+  back.addEventListener("click", (e) => { if (e.target === back) requestClose(); });
   const overflow = document.body.style.overflow;
   document.body.style.overflow = "hidden";
   mount(back, () => { document.body.style.overflow = overflow; btn.focus(); });
