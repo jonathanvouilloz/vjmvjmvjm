@@ -6,10 +6,13 @@ import MenuDropdown from "../islands/MenuDropdown.jsx";
 import ThemeToggle from "./ThemeToggle.astro";
 import { SECTIONS_MENU, sigleSource } from "../lib/sigles";
 
-// Annonce active (actif + fenêtre de dates), la première de la liste
+/* Toutes les annonces actives sont rendues avec leur fenêtre de dates ; le navigateur retient
+   la première dont la fenêtre couvre le jour (comme l'ancien activeNews), sans rebuild. Sans
+   JS, on garde celle qui l'est au moment du build. */
+const inWindow = (n: { debut?: string; fin?: string }, d: string) => (!n.debut || n.debut <= d) && (!n.fin || d <= n.fin);
 const today = new Date().toISOString().slice(0, 10);
-const news = (await getCollection("news")).map((n) => n.data)
-  .find((n) => n.actif && (!n.debut || n.debut <= today) && (!n.fin || today <= n.fin));
+const items = (await getCollection("news")).map((n) => n.data).filter((n) => n.actif);
+const first = items.find((n) => inWindow(n, today));
 
 const sections = SECTIONS_MENU.map((s) => ({
   ...s,
@@ -24,15 +27,18 @@ const secondary = [{ label: "contact", href: "/contact" }, { label: "bio", href:
       <!-- Nom en capitales dessiné par Vania et détouré ; l'encre noire s'inverse en sombre. -->
       <img src="/assets/brand/nom-manuscrit.png" alt="Vania Jaikin Miyazaki" />
     </a>
-    {news && (news.mode === "lien" && news.url ? (
-      <a class="news" href={news.url} target="_blank" rel="noopener noreferrer">
-        <span class="dot" aria-hidden="true"></span><span class="tag">news</span><span class="titre">{news.titre}</span>
-      </a>
-    ) : (
-      <button class="news" type="button" data-news>
-        <span class="dot" aria-hidden="true"></span><span class="tag">news</span><span class="titre">{news.titre}</span>
-      </button>
-    ))}
+    {items.map((news) => {
+      const attrs = { "data-news": "", "data-debut": news.debut, "data-fin": news.fin, hidden: news !== first };
+      return news.mode === "lien" && news.url ? (
+        <a class="news" href={news.url} target="_blank" rel="noopener noreferrer" {...attrs}>
+          <span class="dot" aria-hidden="true"></span><span class="tag">news</span><span class="titre">{news.titre}</span>
+        </a>
+      ) : (
+        <button class="news" type="button" {...attrs}>
+          <span class="dot" aria-hidden="true"></span><span class="tag">news</span><span class="titre">{news.titre}</span>
+        </button>
+      );
+    })}
   </div>
 
   <div class="center">
@@ -46,6 +52,17 @@ const secondary = [{ label: "contact", href: "/contact" }, { label: "bio", href:
     <MenuDropdown client:load sections={sections} secondary={secondary} />
   </div>
 </header>
+
+<script>
+  const d = new Date().toISOString().slice(0, 10);
+  let found = false;
+  document.querySelectorAll<HTMLElement>(".news[data-news]").forEach((el) => {
+    const { debut, fin } = el.dataset;
+    const ok = !found && (!debut || debut <= d) && (!fin || d <= fin);
+    el.hidden = !ok;
+    found ||= ok;
+  });
+</script>
 
 <style>
   header {
@@ -81,6 +98,7 @@ const secondary = [{ label: "contact", href: "/contact" }, { label: "bio", href:
     letter-spacing: 0.06em; text-decoration: none; white-space: nowrap;
     opacity: 0.75; transition: opacity 0.25s;
   }
+  .news[hidden] { display: none; }
   .news:hover { opacity: 1; }
   .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--fg); flex-shrink: 0; animation: pulse 2.4s ease-in-out infinite; }
   .tag { text-transform: uppercase; font-size: 0.9em; letter-spacing: 0.14em; }
