@@ -1,0 +1,52 @@
+---
+import { getEntry } from "astro:content";
+import Base from "../layouts/Base.astro";
+import { image } from "../lib/images";
+
+/* Même règle que l'ancien HOME_PHOTOS : paysages seulement (fond en cover plein écran, un
+   portrait y serait rogné), sinon toutes les photos. Le HTML porte la première ; le script
+   en tire une au hasard dans le navigateur. */
+const photos = (await getEntry("accueil", "accueil"))!.data.photos.map((p) => image(p)).filter((i) => i !== null);
+const paysages = photos.filter((i) => i.w / i.h > 1.15);
+const pool = (paysages.length ? paysages : photos).map((i) => i.src);
+---
+<Base path="/">
+  <a id="accueil" class="accueil" href="/menu" aria-label="Entrer" data-photos={JSON.stringify(pool)}
+    style={pool[0] ? `background-image:url('${pool[0]}')` : undefined}>
+    <span class="voile">
+      <span class="icone"><img src="/assets/brand/nav-home.svg" alt="" aria-hidden="true" width="64" height="64" /></span>
+    </span>
+  </a>
+</Base>
+
+<script>
+  /* Autonome et relançable (astro:page-load) : un nouvel élément #accueil se retire une photo,
+     le même ne se tire qu'une fois. */
+  function tirerPhoto() {
+    const el = document.getElementById("accueil");
+    if (!el || el.dataset.tire) return;
+    el.dataset.tire = "1";
+    try {
+      const pool: string[] = JSON.parse(el.dataset.photos || "[]");
+      if (pool.length) el.style.backgroundImage = `url('${pool[Math.floor(Math.random() * pool.length)]}')`;
+    } catch {}
+  }
+  tirerPhoto();
+  document.addEventListener("astro:page-load", tirerPhoto);
+</script>
+
+<style>
+  .accueil {
+    display: block; height: 100vh; width: 100vw; position: relative; cursor: pointer;
+    background-size: cover; background-position: center; background-color: #1A1A1A;
+  }
+  .voile {
+    position: absolute; inset: 0; background: rgba(0, 0, 0, 0.15);
+    display: flex; align-items: center; justify-content: center;
+    animation: apparition 1s ease 0.12s both;
+  }
+  .icone { display: block; line-height: 0; color: #fff; filter: drop-shadow(0 2px 10px rgba(0, 0, 0, 0.5)); animation: pulse 3s ease-in-out infinite; }
+  .icone img { width: 64px; height: 64px; object-fit: contain; display: block; filter: var(--ink-invert); }
+  @keyframes apparition { from { opacity: 0; } to { opacity: 1; } }
+  @media (prefers-reduced-motion: reduce) { .voile { animation: none; } }
+</style>
