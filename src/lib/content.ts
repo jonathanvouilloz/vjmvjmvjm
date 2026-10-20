@@ -12,3 +12,6 @@ export const seededRandom = (seed: number): number => {
   const x = Math.sin(seed * 127.1 + 311.7) * 43758.5453;
   return x - Math.floor(x);
 };
+
+// Adresse d'un film Kinematik (page créée en Tâche 6) ; l'unicité est vérifiée par la collection.
+export const filmUrl = (film: { id: string; data: { slug?: string } }): string => `/kinematik/${film.data.slug || film.id}`;

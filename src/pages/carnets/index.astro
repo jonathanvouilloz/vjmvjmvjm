@@ -1,0 +1,60 @@
+---
+import Base from "../../layouts/Base.astro";
+import Header from "../../components/Header.astro";
+import Page from "../../components/Page.astro";
+import BackLink from "../../components/BackLink.astro";
+import { carnetsAll } from "../../lib/carnets";
+import { seededRandom as rnd } from "../../lib/content";
+
+const carnets = await carnetsAll();
+// Rotation, décalage, cadre et marge intérieure : tirés de l'index, donc identiques à chaque visite.
+const vars = (i: number) => [
+  `--rot:${(rnd(i) - 0.5) * 5}deg`, `--tx:${(rnd(i + 50) - 0.5) * 14}px`, `--ty:${(rnd(i + 100) - 0.5) * 10}px`,
+  `--cadre:${rnd(i + 150) > 0.65 ? "1px solid var(--fg-subtle)" : "none"}`, `--pad:${rnd(i + 200) > 0.7 ? 6 : 0}px`,
+].join(";");
+---
+<Base title="Carnets de voyages — Vania Jaikin Miyazaki" path="/carnets">
+  <Header />
+  <Page>
+    <BackLink href="/menu" />
+    <div class="collage">
+      {carnets.map((c, i) => (
+        // Décalage en rouleau (pas indexé sur la position absolue) : 117 images, la dernière attendrait des secondes.
+        <div data-reveal style={`transition-delay:${(i % 8) * 50}ms`}>
+          <a href={`/carnets/${c.slug}`} class="tuile" style={vars(i)} aria-label={c.title ? undefined : c.slug}>
+            {/* la vignette allégée : la version pleine est pour la page de l'image */}
+            <img src={c.img.thumb || c.img.src} alt={c.title ?? ""} loading="lazy" width={c.img.w} height={c.img.h} />
+            {c.title && <p>{c.title}</p>}
+          </a>
+        </div>
+      ))}
+    </div>
+  </Page>
+</Base>
+<script>
+  // Apparition au scroll. Même seuil que l'ancien ScrollReveal ; le masquage initial est dans le CSS.
+  const obs = new IntersectionObserver((entries) => {
+    for (const e of entries) if (e.isIntersecting) { e.target.setAttribute("data-visible", ""); obs.unobserve(e.target); }
+  }, { threshold: 0.08, rootMargin: "0px 0px -30px 0px" });
+  document.querySelectorAll("[data-reveal]").forEach((el) => obs.observe(el));
+</script>
+<style>
+  .collage { column-count: 4; column-gap: 32px; }
+  [data-reveal] { break-inside: avoid; }
+  /* Sans JavaScript, tout reste visible. */
+  @media (scripting: enabled) {
+    [data-reveal] { opacity: 0; transform: translateY(14px); transition: opacity 0.7s ease, transform 0.7s ease; }
+    [data-reveal][data-visible] { opacity: 1; transform: translateY(0); }
+  }
+  .tuile {
+    display: block; color: inherit; text-decoration: none;
+    /* marge basse généreuse : la rotation + le décalage font remonter l'image suivante sur la légende de la précédente */
+    break-inside: avoid; margin-bottom: 40px; cursor: pointer;
+    --base: rotate(var(--rot)) translate(var(--tx), var(--ty));
+    transform: var(--base); padding: var(--pad); border: var(--cadre); transition: transform 0.4s ease;
+  }
+  .tuile:hover, .tuile:focus-visible { transform: var(--base) scale(1.025); }
+  img { display: block; width: 100%; height: auto; }
+  p { font-family: var(--font-body); font-size: 13px; margin-top: 12px; color: var(--fg-muted); letter-spacing: 0.02em; }
+  @media (max-width: 680px) { .collage { column-count: 2; } }
+</style>
