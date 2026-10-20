@@ -347,3 +347,12 @@ test('a lightbox page ships the close script', onDist, () => {
 test('the Astro router still keeps its history index in history.state', () => {
   assert.match(read('node_modules/astro/dist/transitions/router.js'), /index: currentHistoryIndex/);
 });
+
+test('lecture pages serve the resized _gen variant of manifest images', onDist, () => {
+  const manifest = JSON.parse(read('src/generated/images.json'));
+  for (const pathname of sitemapPaths().filter((p) => p.startsWith('/lecture/'))) {
+    for (const [, src] of dist(pageFile(pathname)).matchAll(/<img [^>]*?src="\/(assets\/[^"]+)"/g)) {
+      assert.ok(!manifest[src] || manifest[src].src === src, `${pathname} sert ${src} au lieu de sa variante _gen`);
+    }
+  }
+});

@@ -8,6 +8,7 @@ import Popup from "../../components/Popup.astro";
 import AudioPlayer from "../../islands/AudioPlayer.jsx";
 import Playlists from "../../islands/Playlists.jsx";
 import { asset, playlistEmbed, renderMarkdown } from "../../lib/content";
+import { withImageVariants } from "../../lib/images";
 import { abs, describe } from "../../lib/seo";
 
 export async function getStaticPaths() {
@@ -43,7 +44,7 @@ const playlists = (a.playlists ?? []).filter((p) => p.url)
     {/* Non persisté : comme l'ancien AlbumPage, quitter la page démonte le lecteur et coupe le son. */}
     {episodes && <AudioPlayer client:load tracks={episodes} />}
     {playlists.length > 0 && <Playlists client:load playlists={playlists} title={a.titre} />}
-    {a.contenu && <div class="vjm-prose contenu" set:html={renderMarkdown(a.contenu)} />}
+    {a.contenu && <div class="vjm-prose contenu" set:html={withImageVariants(renderMarkdown(a.contenu))} />}
   </Page>
   {a.resume && (
     <Popup id={`popup-album-${album.id}`} seed={index + 2} label={a.titre}>

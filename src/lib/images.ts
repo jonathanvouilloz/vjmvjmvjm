@@ -17,3 +17,10 @@ export function image(path: string): Img | null {
 // Vignette d'un film Kinematik : celle du CMS, sinon `assets/kinematik/{id}.jpg`.
 export const kinematikImage = (film: { id: string; vignette?: string }) =>
   image(film.vignette || `assets/kinematik/${film.id}.jpg`);
+
+// Images collées dans un texte Markdown : `src="/assets/x.jpg"` → variante réduite du manifeste, comme l'ancien build.
+export const withImageVariants = (html: string): string =>
+  html.replace(/(<img [^>]*?src=")([^"]+)"/g, (whole, pre, src) => {
+    const e = entries[clean(src)];
+    return e ? `${pre}${asset(e.src)}"` : whole;
+  });

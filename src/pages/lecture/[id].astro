@@ -5,6 +5,7 @@ import Header from "../../components/Header.astro";
 import Page from "../../components/Page.astro";
 import BackLink from "../../components/BackLink.astro";
 import { renderMarkdown } from "../../lib/content";
+import { withImageVariants } from "../../lib/images";
 import { abs, describe, person } from "../../lib/seo";
 
 export async function getStaticPaths() {
@@ -27,13 +28,13 @@ const t = texte.data;
         {t.surtitre && <p class="surtitre">{t.surtitre}</p>}
         <h1>{t.titre}</h1>
       </header>
-      <div class="vjm-prose" set:html={renderMarkdown(t.corps)} />
+      <div class="vjm-prose" set:html={withImageVariants(renderMarkdown(t.corps))} />
       {t.notes && t.notes.length > 0 && (
         <ol class="vjm-notes vjm-prose" aria-label="Notes">
           {t.notes.map((n, i) => (
             <li id={`note-${i + 1}`}>
               <a href={`#ref-${i + 1}`} aria-label={`Retour à l'appel de note ${i + 1}`}>{i + 1}</a>
-              <div set:html={renderMarkdown(n.md)} />
+              <div set:html={withImageVariants(renderMarkdown(n.md))} />
             </li>
           ))}
         </ol>

@@ -2,6 +2,7 @@
 /* Blocs de contenu communs (Coin lecture, infos d'album, news, résumé Kinematik, bio) :
    texte · image · vidéo · audio · lien. Le style vient de `.vjm-prose` (global.css). */
 import { asset, renderMarkdown } from "../lib/content";
+import { withImageVariants } from "../lib/images";
 import { image } from "../lib/images";
 
 interface Props { blocks?: any[]; class?: string }
@@ -10,7 +11,7 @@ const { blocks = [], class: className = "" } = Astro.props;
 {blocks.length > 0 && (
   <div class={`vjm-prose ${className}`}>
     {blocks.map((b) => {
-      if (b.type === "text") return <div class={b.variante === "liste" ? "vjm-liste" : undefined} set:html={renderMarkdown(b.md)} />;
+      if (b.type === "text") return <div class={b.variante === "liste" ? "vjm-liste" : undefined} set:html={withImageVariants(renderMarkdown(b.md))} />;
       if (b.type === "image") {
         const img = image(b.src);
         return (
