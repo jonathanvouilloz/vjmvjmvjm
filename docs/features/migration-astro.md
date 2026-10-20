@@ -13,6 +13,9 @@
 
 **Prochain :** Phase 1.1 — `Base.astro`, `global.css` (tokens fusionnés), Header, police du menu.
 **Pièges :** `precompile.mjs` ne tourne plus sur cette branche (référence pour le portage, supprimé en Phase 4) · la vignette Kinematik par défaut est `assets/kinematik/{id}.jpg` (logique dans `resolveImages`, à reproduire côté page) · `astro dev` ne recharge pas un JSON de `content/` modifié : relancer · à la fusion finale, un fichier déposé par le CMS dans `assets/` (ancien chemin) pendant la migration doit être déplacé dans `public/assets/`.
+**Commit :** da76276 feat: Astro foundation with strict content collections and an image manifest
+
+---
 
 ## Etat session 2026-10-20
 
