@@ -408,3 +408,14 @@ test('footnotes are set a step smaller than the text', () => {
   assert.match(html(), /\.vjm-notes \{[^}]*font-size: 0\.72em/);
   assert.match(html(), /\.fn-ref \{ font-size: 0\.6em/);
 });
+
+// Sitemap et canoniques doivent écrire chaque URL pareil (sans barre finale), sinon Google en voit deux.
+test('every sitemap URL equals the canonical of its built page', { skip: !existsSync(new URL('dist/sitemap-0.xml', root)) }, () => {
+  const locs = [...read('dist/sitemap-0.xml').matchAll(/<loc>([^<]+)<\/loc>/g)].map((m) => m[1]);
+  assert.ok(locs.length > 0);
+  for (const loc of locs) {
+    const { pathname } = new URL(loc);
+    const page = read(`dist/${pathname === '/' ? 'index' : pathname.slice(1)}.html`);
+    assert.equal(page.match(/rel="canonical" href="([^"]+)"/)?.[1], loc);
+  }
+});

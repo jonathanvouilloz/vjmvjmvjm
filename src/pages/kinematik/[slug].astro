@@ -23,7 +23,7 @@ const info = !!(v.resume?.length || v.generique?.length);
 <Base title={`${v.titre} — Vania Jaikin Miyazaki`} path={filmUrl(film)} description={describe(v.information, v.resume)} image={thumb}
   ld={{
     "@type": "VideoObject", name: v.titre, description: describe(v.information, v.resume) ?? v.titre,
-    thumbnailUrl: thumb && abs(thumb), uploadDate: String(v.annee), duration: isoDuration(v.duree),
+    thumbnailUrl: thumb && abs(thumb), uploadDate: `${v.annee}-01-01`, // Google veut une date complète ; le contenu ne donne que l'année duration: isoDuration(v.duree),
     embedUrl: `https://player.vimeo.com/video/${v.vimeoId}`, url: abs(filmUrl(film)), inLanguage: "fr",
     director: await person(),
   }}>
