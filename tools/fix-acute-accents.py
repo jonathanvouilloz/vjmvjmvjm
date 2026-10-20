@@ -11,16 +11,16 @@ dans le même trait manuscrit que le reste de la police.
 Usage :
     python tools/fix-acute-accents.py
 
-Entrée  : assets/fonts/LearningCurve.ttf        (original, jamais modifié)
-Sortie  : assets/fonts/LearningCurve-fr.ttf     (celui que le site charge)
+Entrée  : archive/fonts/LearningCurve.ttf        (original, jamais modifié)
+Sortie  : archive/fonts/LearningCurve-fr.ttf     (plus chargé par le site, voir archive/README.md)
 """
 
 from pathlib import Path
 from fontTools.ttLib import TTFont
 
 ROOT = Path(__file__).resolve().parent.parent
-SRC = ROOT / "assets" / "fonts" / "LearningCurve.ttf"
-DST = ROOT / "assets" / "fonts" / "LearningCurve-fr.ttf"
+SRC = ROOT / "archive" / "fonts" / "LearningCurve.ttf"
+DST = ROOT / "archive" / "fonts" / "LearningCurve-fr.ttf"
 
 ACUTE_GLYPHS = [
     "acute",

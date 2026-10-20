@@ -108,19 +108,19 @@ test('the latest ink wordmark generates the handwritten header name', () => {
 
 test('the generated brand asset set is complete', () => {
   for (const path of [
-    'assets/brand/nav-eye-left.png',
-    'assets/brand/nav-eye-right.png',
-    'assets/brand/nav-home.png',
-    'assets/brand/nav-moon.png',
-    'assets/brand/nav-sun.png',
-    'assets/brand/nav-mountains.png',
-    'assets/brand/info-album-1.png',
-    'assets/brand/info-album-2.png',
-    'assets/brand/info-album-3.png',
-    'assets/brand/favicon.svg',
-    'assets/brand/favicon-32.png',
-    'assets/brand/favicon-16.png',
-    'assets/brand/apple-touch-icon.png',
+    'public/assets/brand/nav-eye-left.png',
+    'public/assets/brand/nav-eye-right.png',
+    'public/assets/brand/nav-home.png',
+    'public/assets/brand/nav-moon.png',
+    'public/assets/brand/nav-sun.png',
+    'public/assets/brand/nav-mountains.png',
+    'public/assets/brand/info-album-1.png',
+    'public/assets/brand/info-album-2.png',
+    'public/assets/brand/info-album-3.png',
+    'public/assets/brand/favicon.svg',
+    'public/assets/brand/favicon-32.png',
+    'public/assets/brand/favicon-16.png',
+    'public/assets/brand/apple-touch-icon.png',
   ]) {
     assert.equal(existsSync(new URL(path, root)), true, `${path} should exist`);
   }
@@ -145,7 +145,7 @@ test('the supplied vector sigles replace raster UI marks and remain individually
     ...Array.from({ length: 5 }, (_, i) => `info-album-${i + 1}.svg`),
     'nav-eye-left.svg', 'nav-eye-middle.svg', 'nav-eye-right.svg',
   ]) {
-    assert.equal(existsSync(new URL(`assets/brand/${path}`, root)), true, `${path} should exist`);
+    assert.equal(existsSync(new URL(`public/assets/brand/${path}`, root)), true, `${path} should exist`);
   }
 });
 
@@ -167,7 +167,7 @@ test('the production build keeps SRI for the pinned React bundles', () => {
 test('the production build creates bounded web audio without changing canonical masters', () => {
   assert.equal(
     packageManifest().scripts.build,
-    'python tools/import-vector-sigles.py && node precompile.mjs --prod && python tools/optimize-dist.py',
+    'python tools/import-vector-sigles.py && node tools/build-images.mjs && astro build && python tools/optimize-dist.py',
   );
   const source = optimizeDistScript();
   assert.match(source, /AUDIO_BITRATE\s*=\s*"48k"/);
@@ -212,13 +212,13 @@ test('components read editable data and render shared content blocks', () => {
 });
 
 test('the CMS schema covers every content file', () => {
-  const config = read('admin/config.yml');
+  const config = read('public/admin/config.yml');
   for (const file of ['site.json', 'news.json', 'bio.json', 'kinematik.json', 'albums.json']) {
     assert.match(config, new RegExp(`file: content/${file.replace('.', '\.')}`));
   }
   assert.match(config, /folder: content\/lecture/);
   assert.match(config, /name: github/);
-  assert.match(read('admin/index.html'), /@sveltia\/cms/);
+  assert.match(read('public/admin/index.html'), /@sveltia\/cms/);
 });
 
 test('the star opens the singular Aléa du jour', () => {
@@ -323,7 +323,7 @@ test('albums carry a short summary, playlists and a rich page text', async () =>
 });
 
 test('the CMS schema bounds short texts and offers title, excerpt or image vignettes', () => {
-  const config = read('admin/config.yml');
+  const config = read('public/admin/config.yml');
   for (const name of ['resume', 'extrait', 'information']) {
     assert.match(config, new RegExp(`name: ${name},.*maxlength: 300`), `${name} limité à 300`);
   }
@@ -337,7 +337,7 @@ test('the CMS schema bounds short texts and offers title, excerpt or image vigne
 });
 
 test('every image list of the site is editable in the CMS', () => {
-  const config = read('admin/config.yml');
+  const config = read('public/admin/config.yml');
   for (const file of ['carnets', 'accueil', 'aleas']) {
     assert.ok(config.includes(`file: content/${file}.json`), `${file} absent du CMS`);
   }
@@ -364,6 +364,8 @@ test('build-images sizes uploads, makes thumbnails and skips missing files', asy
   assert.deepEqual([img.w, img.h], [1280, 960]);
   assert.match(img.src, /^assets\/_gen\/photo-[0-9a-f]{12}\.jpg$/);
   assert.match(img.thumb, /^assets\/_gen\/photo-[0-9a-f]{12}-t\.jpg$/);
+  // le manifeste lu par le site est indexé par le chemin du CMS, sans « / » initial
+  assert.deepEqual(b.manifest['assets/uploads/photo.jpg'], img);
   const thumb = await sharp(path.join(tmp, img.thumb)).metadata();
   assert.equal(Math.max(thumb.width, thumb.height), 700);
   assert.equal(await b.image('assets/uploads/absente.jpg'), null);

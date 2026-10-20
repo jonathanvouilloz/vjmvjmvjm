@@ -1,12 +1,12 @@
 # Sveltia CMS — schémas du contenu de vjmvjmvjm.com
 # Chaque collection correspond à un fichier (ou un dossier) de `content/`.
-# Le build (tools/build-content.mjs) rend le Markdown : toute propriété `md`, `corps` ou
+# Le build rend le Markdown : toute propriété `md`, `corps` ou
 # `contenu` devient du HTML, et les URL de playlist deviennent des lecteurs intégrés.
 
 # Chaque enregistrement crée un commit sur `content`, pas sur `main` : rien ne part en ligne.
 # La publication (un seul build Netlify) se fait via .github/workflows/publier.yml : bouton
 # « Publish Changes » du CMS, onglet Actions de GitHub, ou automatiquement chaque nuit.
-# La bibliothèque couvre tout assets/ (home, carnets, bio…) : un fichier déposé va dans le
+# La bibliothèque couvre tout public/assets/ (home, carnets, bio…) : un fichier déposé va dans le
 # dossier ouvert. Le build en tire dimensions et vignettes (tools/build-images.mjs), une
 # photo de téléphone peut donc être déposée telle quelle.
 backend:
@@ -17,7 +17,8 @@ backend:
   # l'événement `sveltia-cms-publish` qui lance .github/workflows/publier.yml.
   skip_ci: true
 
-media_folder: assets
+# Les fichiers vont dans public/assets/ ; les chemins enregistrés restent « assets/… ».
+media_folder: public/assets
 public_folder: assets
 
 collections:
@@ -179,6 +180,12 @@ singletons:
         fields:
           - { name: id, label: "Identifiant (unique, ex. k13)", widget: string }
           - { name: titre, label: Titre, widget: string }
+          - name: slug
+            label: "Adresse de la page (facultatif)"
+            widget: string
+            required: false
+            pattern: ["^[a-z0-9]+(-[a-z0-9]+)*$", "Minuscules, chiffres et tirets seulement (ex. charles-lloyd)"]
+            hint: "Donne vjmvjmvjm.com/kinematik/charles-lloyd. Vide : l'identifiant (k1). Ne plus la changer une fois en ligne : les liens existants casseraient."
           - { name: vignette, label: "Image de la vignette", widget: image, required: false }
           - { name: sousTitre, label: Sous-titre, widget: string, required: false }
           - { name: duree, label: "Durée (ex. 2'11\")", widget: string }

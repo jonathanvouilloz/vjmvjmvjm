@@ -9,17 +9,22 @@
      · version réduite si l'image dépasse la taille d'affichage ;
      · vignette de collage, sauf si une `nom-t.jpg` existe déjà à côté de l'image.
 
-   Les fichiers produits vont dans `assets/_gen/` (ignoré par git, copié dans dist/ avec le
-   reste de `assets/`). Leur nom dépend du chemin, de la taille et de la date du fichier
+   Les fichiers produits vont dans `public/assets/_gen/` (ignoré par git, copié dans dist/
+   avec le reste de `public/`). Leur nom dépend du chemin, de la taille et de la date du fichier
    source : une image inchangée n'est pas retraitée, et ce qui n'est plus référencé est
    supprimé en fin de build.
+
+   Lancé seul (`node tools/build-images.mjs`, avant `astro build`), il écrit le manifeste
+   `src/generated/images.json` : chemin du CMS → `{ src, w, h, thumb? }`, lu par le site.
 
    Une image listée mais introuvable est retirée avec un avertissement plutôt que de casser
    le build : sinon une suppression maladroite dans le CMS bloquerait toute mise en ligne. */
 import crypto from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
+import { pathToFileURL } from "node:url";
 import sharp from "sharp";
+import { loadContent } from "./build-content.mjs";
 
 const GEN = "assets/_gen";
 const THUMB = 700;
@@ -36,6 +41,9 @@ const KEEP = new Set(["png", "gif", "svg"]);
 export function createImageBuilder({ root = "." } = {}) {
   const used = new Set();
   const warnings = [];
+  // shortcut: une image demandée à deux tailles garde la première ; à revoir si un même
+  // fichier sert un jour à deux usages de tailles différentes
+  const manifest = {};
   const pending = new Map(); // sortie → promesse : une même variante n'est écrite qu'une fois
   const hashes = new Map();
   const abs = (p) => path.join(root, p);
@@ -96,6 +104,7 @@ export function createImageBuilder({ root = "." } = {}) {
           : keep || Math.max(w0, h0) <= THUMB ? out.src
           : await variant(src, THUMB, "-t");
       }
+      manifest[src] ??= out;
       return out;
     } catch (error) {
       warnings.push(`image illisible, ignorée : ${src} (${error.message})`);
@@ -109,7 +118,7 @@ export function createImageBuilder({ root = "." } = {}) {
     for (const f of fs.readdirSync(abs(GEN))) if (!used.has(f)) fs.rmSync(abs(path.join(GEN, f)));
   }
 
-  return { image, prune, warnings };
+  return { image, prune, warnings, manifest };
 }
 
 // Le chemin sert d'identifiant : deux fichiers de même nom dans deux dossiers (un carnet et
@@ -181,5 +190,12 @@ export async function resolveImages(content, { root = "." } = {}) {
 
   b.prune();
   for (const w of b.warnings) console.warn("⚠", w);
-  return { carnets, home, portraits, aleas };
+  return { carnets, home, portraits, aleas, manifest: b.manifest };
+}
+
+if (import.meta.url === pathToFileURL(process.argv[1]).href) {
+  const { manifest } = await resolveImages(loadContent("content"), { root: "public" });
+  fs.mkdirSync("src/generated", { recursive: true });
+  fs.writeFileSync("src/generated/images.json", JSON.stringify(manifest, null, 1));
+  console.log(`build-images : ${Object.keys(manifest).length} images dans src/generated/images.json`);
 }

@@ -1,5 +1,19 @@
 # Feature — Migration vers Astro (site propre v1)
 
+## Etat session 2026-10-20 (Phase 0)
+
+**Fait :** Phase 0 sur la branche `astro`.
+- Astro 7.4.1 + `@astrojs/react` 7.1 + `@astrojs/sitemap` 3.7 + React 19.3 ; `astro.config.mjs`, `tsconfig.json`.
+- `assets/` → `public/assets/`, `admin/` → `public/admin/` ; chemins des scripts Python et des tests suivis. CMS : `media_folder: public/assets` (les valeurs JSON restent `assets/…`).
+- Slug Kinematik tranché (option B) : champ `slug` facultatif dans le CMS (motif `a-z0-9-`), URL = `/kinematik/{slug || id}`, deux films à la même adresse arrêtent le build.
+- `src/content.config.ts` : 9 collections sur `content/`, schémas zod miroir de `config.yml`. Loader `json()` maison : celui d'Astro (`file`) journalise un JSON illisible ou un doublon et continue avec une collection **vide**. Vérifié : type faux, JSON cassé, slug en double, carnet en double, texte de lecture cassé → le build s'arrête avec le fichier en cause.
+- Manifeste d'images : `node tools/build-images.mjs` écrit `src/generated/images.json` (chemin du CMS → `{src, w, h, thumb?}`, 168 images), variantes dans `public/assets/_gen/`.
+- Polices d'archive (licences non commerciales, `ArsenaleWhite-trial`) sorties de `public/` vers `archive/fonts/` : `precompile.mjs` les excluait, Astro aurait tout publié.
+- `npm run build` complet OK (0 page, normal), 33 tests verts.
+
+**Prochain :** Phase 1.1 — `Base.astro`, `global.css` (tokens fusionnés), Header, police du menu.
+**Pièges :** `precompile.mjs` ne tourne plus sur cette branche (référence pour le portage, supprimé en Phase 4) · la vignette Kinematik par défaut est `assets/kinematik/{id}.jpg` (logique dans `resolveImages`, à reproduire côté page) · `astro dev` ne recharge pas un JSON de `content/` modifié : relancer · à la fusion finale, un fichier déposé par le CMS dans `assets/` (ancien chemin) pendant la migration doit être déplacé dans `public/assets/`.
+
 ## Etat session 2026-10-20
 
 **Fait :**
@@ -23,13 +37,17 @@
 | `design-extract/site-minimalist-portoflio/project/Waniushka Portfolio.html` | gabarit : `:root`, SEO, JSON-LD, copie statique du formulaire Netlify |
 | `precompile.mjs` | Babel + injection contenu/SEO + copie `dist/` — disparaît |
 | `tools/build-content.mjs` | Markdown → HTML, lecteurs playlist/vidéo — logique à reprendre dans `src/lib/content.ts` |
-| `tools/build-images.mjs` | dimensions, variantes, vignettes, purge `assets/_gen/` — conservé, écrit un manifeste |
-| `admin/config.yml` | schémas Sveltia, source des schémas zod |
+| `tools/build-images.mjs` | dimensions, variantes, vignettes, purge `public/assets/_gen/` ; lancé seul, écrit `src/generated/images.json` |
+| `public/admin/config.yml` | schémas Sveltia, source des schémas zod |
+| `src/content.config.ts` | collections + loader `json()` strict + unicité des URL Kinematik |
+| `astro.config.mjs` | site, sortie statique, react + sitemap |
 | `tests/site.test.mjs` | 33 tests, surtout des regex sur la source JSX — à réécrire sur `dist/` |
 
 ### Decisions cles
 - Même repo, branche `astro` ; `content/` ne change pas de forme pendant la migration.
 - Pipeline d'images sharp conservé plutôt que `astro:assets` (pas de migration des chemins du CMS).
+- Slug Kinematik : champ `slug` facultatif, repli sur `id` (seule exception à « `content/` ne change pas »).
+- Loader `json()` maison plutôt que `file` d'Astro, qui laisse passer une collection vide.
 
 ---
 

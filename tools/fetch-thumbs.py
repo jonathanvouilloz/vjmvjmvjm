@@ -26,7 +26,7 @@ sys.stdout.reconfigure(encoding="utf-8", errors="replace")
 
 ROOT = Path(__file__).resolve().parent.parent
 DATA = ROOT / "design-extract" / "site-minimalist-portoflio" / "project" / "waniushka-components.jsx"
-OUT = ROOT / "assets" / "kinematik"
+OUT = ROOT / "public" / "assets" / "kinematik"
 UA = {"User-Agent": "Mozilla/5.0"}
 WIDTH = 1280
 
