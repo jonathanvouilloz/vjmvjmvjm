@@ -419,3 +419,10 @@ test('every sitemap URL equals the canonical of its built page', { skip: !exists
     assert.equal(page.match(/rel="canonical" href="([^"]+)"/)?.[1], loc);
   }
 });
+
+test('a built Kinematik page declares a VideoObject with duration and a full uploadDate', { skip: !existsSync(new URL('dist/kinematik/k1.html', root)) }, () => {
+  const ld = JSON.parse(read('dist/kinematik/k1.html').match(/ld\+json">([^<]*)<\/script>/)[1]);
+  assert.equal(ld['@type'], 'VideoObject');
+  assert.match(ld.duration, /^PT(\d+H)?\d+M\d+S$/);
+  assert.match(ld.uploadDate, /^\d{4}-\d{2}-\d{2}$/);
+});
