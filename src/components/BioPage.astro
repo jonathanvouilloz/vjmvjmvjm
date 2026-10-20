@@ -8,7 +8,7 @@ import Page from "../components/Page.astro";
 import Blocks from "../components/Blocks.astro";
 import Popup from "../components/Popup.astro";
 import { asset } from "../lib/content";
-import { image } from "../lib/images";
+import { image, imageSrc } from "../lib/images";
 import { abs, describe, person } from "../lib/seo";
 
 interface Props { lang: "fr" | "en" }
@@ -17,7 +17,7 @@ const site = (await getEntry("site", "site"))!.data;
 const bio = (await getEntry("bio", "bio"))!.data;
 const textes = bio[lang];
 // Portrait par défaut ; le script de bas de page en tire un au hasard dans `data-portraits`.
-const portraits = bio.portraits.map(asset);
+const portraits = bio.portraits.map(imageSrc);
 const portrait = bio.portraits[0] ? image(bio.portraits[0]) : null;
 const langs = [{ code: "fr", label: "FR", href: "/bio" }, { code: "en", label: "EN", href: "/en/bio" }];
 ---
@@ -46,7 +46,7 @@ const langs = [{ code: "fr", label: "FR", href: "/bio" }, { code: "en", label: "
       </div>
       {portrait && (
         <div class="portrait">
-          <img id="bio-portrait" src={asset(bio.portraits[0])} alt="Vania Jaikin Miyazaki" loading="lazy"
+          <img id="bio-portrait" src={imageSrc(bio.portraits[0])} alt="Vania Jaikin Miyazaki" loading="lazy"
             width={portrait.w} height={portrait.h} data-portraits={JSON.stringify(portraits)} />
         </div>
       )}

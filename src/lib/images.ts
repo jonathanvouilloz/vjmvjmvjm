@@ -1,6 +1,6 @@
 /* Lecture du manifeste écrit par tools/build-images.mjs : chemin du CMS → { src, w, h, thumb? }. */
 import manifest from "../generated/images.json";
-import { asset } from "./content";
+import { asset, swapImageSrcs } from "./content";
 
 export type Img = { src: string; w: number; h: number; thumb?: string };
 
@@ -14,13 +14,12 @@ export function image(path: string): Img | null {
   return e && { ...e, src: asset(e.src), ...(e.thumb ? { thumb: asset(e.thumb) } : {}) };
 }
 
+// Src d'affichage : la variante réduite du manifeste, sinon le fichier du CMS tel quel.
+export const imageSrc = (path: string): string => image(path)?.src ?? asset(path);
+
 // Vignette d'un film Kinematik : celle du CMS, sinon `assets/kinematik/{id}.jpg`.
 export const kinematikImage = (film: { id: string; vignette?: string }) =>
   image(film.vignette || `assets/kinematik/${film.id}.jpg`);
 
 // Images collées dans un texte Markdown : `src="/assets/x.jpg"` → variante réduite du manifeste, comme l'ancien build.
-export const withImageVariants = (html: string): string =>
-  html.replace(/(<img [^>]*?src=")([^"]+)"/g, (whole, pre, src) => {
-    const e = entries[clean(src)];
-    return e ? `${pre}${asset(e.src)}"` : whole;
-  });
+export const withImageVariants = (html: string): string => swapImageSrcs(html, (src) => entries[clean(src)]?.src);

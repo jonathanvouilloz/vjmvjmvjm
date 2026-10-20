@@ -66,6 +66,13 @@ const mediaParagraphs = (html: string) => html
 // Le CMS écrit `assets/…` sans barre initiale : relatif, il casserait sous /lecture/… ou /films/….
 const absoluteAssets = (html: string) => html.replace(/(<img [^>]*?src=")assets\//g, "$1/assets/");
 
+// Remplace le `src` des <img> par celui que donne `variant` (undefined = on garde l'original).
+export const swapImageSrcs = (html: string, variant: (path: string) => string | undefined): string =>
+  html.replace(/(<img [^>]*?src=")([^"]+)"/g, (whole, pre: string, src: string) => {
+    const v = variant(src);
+    return v ? `${pre}${asset(v)}"` : whole;
+  });
+
 export const renderMarkdown = (md: string): string =>
   footnoteRefs(absoluteAssets(mediaParagraphs(marked.parse(typo(md)) as string))).trim();
 

@@ -4,7 +4,7 @@
 import SketchFrame from "./SketchFrame.astro";
 import { asset, typo } from "../lib/content";
 import { seededRandom as rnd } from "../lib/random";
-import { image } from "../lib/images";
+import { image, imageSrc } from "../lib/images";
 
 interface Props { text: { id: string; data: any }; index: number }
 const { text, index } = Astro.props;
@@ -28,7 +28,7 @@ const scale = 0.9 + rnd(index + 40) * 0.35; // la taille du texte varie d'une vi
   <span class="cadre">
     <SketchFrame seed={index + 11} strokeWidth={1.1} />
     {v.type === "image" && v.image ? (
-      <img src={asset(v.image)} alt="" loading="lazy" width={img?.w} height={img?.h} />
+      <img src={img?.thumb ?? imageSrc(v.image)} alt="" loading="lazy" width={img?.w} height={img?.h} />
     ) : v.type === "extrait" && v.extrait ? (
       <>
         <span class="extrait" style={`font-size:${(1.08 * scale).toFixed(2)}rem`}>« {typo(v.extrait).trim()} »</span>

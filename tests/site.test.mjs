@@ -131,7 +131,7 @@ test('build-images sizes uploads, makes thumbnails and skips missing files', asy
   b.prune();
   assert.equal(fs.readdirSync(path.join(tmp, 'assets/_gen')).length, 3);
 
-  // images collées dans les textes : réduites elles aussi, chemins réécrits, quel que soit
+  // images collées dans les textes : réduites elles aussi et inscrites au manifeste, quel que soit
   // le dossier de assets/ où le CMS les a déposées
   const { resolveImages } = await import('../tools/build-images.mjs');
   fs.mkdirSync(path.join(tmp, 'assets/carnets'), { recursive: true });
@@ -141,9 +141,9 @@ test('build-images sizes uploads, makes thumbnails and skips missing files', asy
     bio: { fr: { pro: [{ type: 'image', src: 'assets/uploads/photo.jpg' }] } },
     albums: [{ contenuHtml: '<figure><img src="assets/carnets/vue.jpg" alt=""></figure>' }],
   };
-  await resolveImages(data, { root: tmp });
-  assert.match(data.bio.fr.pro[0].src, /^assets\/_gen\/photo-[0-9a-f]{12}\.jpg$/);
-  assert.match(data.albums[0].contenuHtml, /src="assets\/_gen\/vue-[0-9a-f]{12}\.jpg"/);
+  const { manifest } = await resolveImages(data, { root: tmp });
+  assert.match(manifest['assets/uploads/photo.jpg'].src, /^assets\/_gen\/photo-[0-9a-f]{12}\.jpg$/);
+  assert.match(manifest['assets/carnets/vue.jpg'].src, /^assets\/_gen\/vue-[0-9a-f]{12}\.jpg$/);
   fs.rmSync(tmp, { recursive: true, force: true });
 });
 
@@ -348,11 +348,11 @@ test('the Astro router still keeps its history index in history.state', () => {
   assert.match(read('node_modules/astro/dist/transitions/router.js'), /index: currentHistoryIndex/);
 });
 
-test('lecture pages serve the resized _gen variant of manifest images', onDist, () => {
-  const manifest = JSON.parse(read('src/generated/images.json'));
-  for (const pathname of sitemapPaths().filter((p) => p.startsWith('/lecture/'))) {
-    for (const [, src] of dist(pageFile(pathname)).matchAll(/<img [^>]*?src="\/(assets\/[^"]+)"/g)) {
-      assert.ok(!manifest[src] || manifest[src].src === src, `${pathname} sert ${src} au lieu de sa variante _gen`);
-    }
-  }
+test('Markdown images are swapped for their resized manifest variant', async () => {
+  const { swapImageSrcs } = await importContent();
+  // le manifeste réel n'a (encore) que des entrées identité : on en fixe une réduite
+  const manifest = { 'assets/uploads/big.jpg': { src: 'assets/_gen/big-0123456789ab.jpg' } };
+  const out = swapImageSrcs('<p><img src="/assets/uploads/big.jpg" alt=""><img src="/assets/inconnue.jpg" alt=""></p>', (p) => manifest[p.replace(/^\//, '')]?.src);
+  assert.ok(out.includes('<img src="/assets/_gen/big-0123456789ab.jpg"'), 'variante absente');
+  assert.ok(out.includes('<img src="/assets/inconnue.jpg"'), 'image hors manifeste conservée');
 });

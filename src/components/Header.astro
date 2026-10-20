@@ -3,6 +3,7 @@
    montagne au centre · ≡ à droite. Les anciens callbacks d'état sont des liens. */
 import { getCollection, getEntry } from "astro:content";
 import { asset } from "../lib/content";
+import { imageSrc } from "../lib/images";
 import MenuDropdown from "../islands/MenuDropdown.jsx";
 import ThemeToggle from "./ThemeToggle.astro";
 import Popup from "./Popup.astro";
@@ -23,7 +24,7 @@ const sections = SECTIONS_MENU.map((s) => ({
   sigles: { left: sigleSource(s.id, true), right: sigleSource(s.id, false) },
 }));
 // Pool de l'aléa du jour : la pop-up (Tâche 7) en tire une image au hasard à chaque clic, comme l'ancien openStar.
-const aleas = (await getEntry("aleas", "aleas"))!.data.aleas.map(asset);
+const aleas = (await getEntry("aleas", "aleas"))!.data.aleas.map(imageSrc);
 const secondary = [{ label: "contact", href: "/contact" }, { label: "bio", href: "/bio" }];
 ---
 <!-- Persisté d'une page à l'autre et hors du fondu de page, comme l'ancien en-tête qui restait

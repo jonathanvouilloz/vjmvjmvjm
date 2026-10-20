@@ -128,22 +128,18 @@ const UPLOAD = /^assets\/(?!_gen\/)[^"]+\.(jpe?g|png|webp|tiff?|heic)$/i;
 // Champs texte : Markdown brut (`md`, `corps`, `contenu`) ou HTML déjà rendu.
 const TEXT_KEYS = /^(md|corps|contenu|html|corpsHtml|contenuHtml)$/;
 
-/* Images insérées dans les textes (blocs image, éditeur riche) : réduites à 1600 px aussi,
-   sinon une photo de téléphone collée dans un texte partirait en ligne à 5 Mo. */
+/* Images insérées dans les textes (blocs image, éditeur riche) : inscrites au manifeste, réduites à
+   1600 px aussi (le site les y retrouve), sinon une photo de téléphone collée dans un texte partirait en ligne à 5 Mo. */
 async function resolveTextImages(node, b) {
   if (Array.isArray(node)) { for (const n of node) await resolveTextImages(n, b); return; }
   if (!node || typeof node !== "object") return;
   for (const [k, v] of Object.entries(node)) {
     if (k === "src" && typeof v === "string" && UPLOAD.test(clean(v))) {
-      node.src = (await b.image(v, { max: 1600 }))?.src || v;
+      await b.image(v, { max: 1600 });
     } else if (TEXT_KEYS.test(k) && typeof v === "string" && v.includes("assets/")) {
-      let html = v;
       for (const [, src] of v.matchAll(/(?:src="|\]\()\/?(assets\/[^"\s)]+)/g)) {
-        if (!UPLOAD.test(src)) continue;
-        const img = await b.image(src, { max: 1600 });
-        if (img) html = html.split(`"${src}"`).join(`"${img.src}"`).split(`"/${src}"`).join(`"${img.src}"`);
+        if (UPLOAD.test(src)) await b.image(src, { max: 1600 });
       }
-      node[k] = html;
     } else {
       await resolveTextImages(v, b);
     }
