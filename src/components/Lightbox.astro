@@ -1,0 +1,110 @@
+---
+/* Lightbox plein écran (ancien MediaOverlay) : une page par image ou film. Les flèches sont de vrais
+   liens (sans JavaScript aussi) ; le script ajoute le clavier et la fermeture. */
+interface Props { prevHref?: string; nextHref?: string; closeHref: string; label: string }
+const { prevHref, nextHref, closeHref, label } = Astro.props;
+const hasInfo = Astro.slots.has("info");
+---
+<main class="lb" data-lightbox data-close={closeHref} data-prev={prevHref} data-next={nextHref} aria-label={label}>
+  <a class="fermer" href={closeHref} aria-label="Fermer">×</a>
+  {prevHref && <a class="fleche g" href={prevHref} data-astro-history="replace" aria-label="Précédent">‹</a>}
+  {nextHref && <a class="fleche d" href={nextHref} data-astro-history="replace" aria-label="Suivant">›</a>}
+  <div class="contenu">
+    <slot />
+    <div class="legende-ligne">
+      <p><slot name="legende" /></p>
+      {hasInfo && (
+        <button type="button" class="info" aria-expanded="false" aria-label="Résumé et générique" title="Résumé et générique">
+          {/* l'encre du « i » est noire : on l'inverse sur le fond sombre de la lightbox */}
+          <img src="/assets/brand/info-album-4.svg" alt="" aria-hidden="true" />
+        </button>
+      )}
+    </div>
+    {hasInfo && <div class="panneau vjm-scroll"><slot name="info" /></div>}
+  </div>
+</main>
+<script>
+  import { navigate } from "astro:transitions/client";
+
+  // Un seul écouteur pour toute la session : le script d'un composant ne tourne qu'une fois sous le ClientRouter.
+  const lb = () => document.querySelector<HTMLElement>("[data-lightbox]");
+
+  /* Fermer = revenir en arrière si la visite est passée par la grille (le ClientRouter numérote ses
+     entrées d'historique dans history.state.index : > 0 = on est arrivé ici depuis une autre page
+     du site, forcément la grille puisque seule la grille mène à une lightbox, directement ou par ‹ ›
+     en replace). Atterrissage direct (index 0 ou état absent) : retour en arrière sortirait du site,
+     on va à la page parente. */
+  const close = (el: HTMLElement) => {
+    if (history.state?.index > 0) history.back();
+    else navigate(el.dataset.close!);
+  };
+
+  document.addEventListener("keydown", (e) => {
+    const el = lb();
+    if (!el || e.altKey || e.ctrlKey || e.metaKey) return;
+    if (e.key === "Escape") close(el);
+    else if (e.key === "ArrowLeft" && el.dataset.prev) navigate(el.dataset.prev, { history: "replace" });
+    else if (e.key === "ArrowRight" && el.dataset.next) navigate(el.dataset.next, { history: "replace" });
+  });
+
+  document.addEventListener("click", (e) => {
+    const el = lb();
+    const t = e.target as HTMLElement;
+    if (!el || !el.contains(t)) return;
+    // le fond (pas le contenu) ferme, comme l'ancien overlay
+    if (t === el || t.closest(".fermer")) { e.preventDefault(); close(el); }
+    const info = t.closest<HTMLButtonElement>(".info");
+    if (info) {
+      const open = info.getAttribute("aria-expanded") !== "true";
+      info.setAttribute("aria-expanded", String(open));
+      el.toggleAttribute("data-info-open", open);
+    }
+  });
+</script>
+<style is:global>
+  /* Le menu et l'en-tête n'existent pas ici : l'overlay d'origine les recouvrait. */
+  .lb {
+    position: fixed; inset: 0; z-index: 300; background: rgba(0, 0, 0, 0.94); color: #eee;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    cursor: pointer; animation: lb-fond 0.4s ease;
+  }
+  .lb .contenu {
+    cursor: default; display: flex; flex-direction: column; align-items: center; animation: lb-entree 0.4s ease;
+  }
+  .lb .fermer {
+    position: absolute; top: 18px; right: 24px; z-index: 3; color: #eee; text-decoration: none;
+    font-size: 30px; line-height: 1; opacity: 0.8;
+  }
+  .lb .fleche {
+    position: absolute; top: 50%; transform: translateY(-50%); z-index: 2; color: #eee; text-decoration: none;
+    font-size: 44px; line-height: 1; opacity: 0.65; transition: opacity 0.2s;
+  }
+  .lb .fleche.g { left: clamp(12px, 4vw, 48px); }
+  .lb .fleche.d { right: clamp(12px, 4vw, 48px); }
+  .lb .fleche:hover, .lb .fleche:focus-visible { opacity: 1; }
+  .lb .legende-ligne { display: flex; align-items: center; gap: 14px; margin-top: 16px; }
+  .lb .legende-ligne p {
+    color: #bbb; font-size: 15px; font-family: var(--font-body); text-align: center; line-height: 1.5;
+  }
+  .lb .legende-ligne p:empty { display: none; }
+  .lb .num { font-family: var(--font-digital); font-size: 13px; }
+  .lb .info {
+    background: none; border: none; cursor: pointer; width: 44px; height: 44px; opacity: 0.7;
+    display: flex; align-items: center; justify-content: center; transition: opacity 0.2s;
+  }
+  .lb .info[aria-expanded="true"] { opacity: 1; }
+  .lb .info img { width: 26px; height: 26px; object-fit: contain; filter: invert(1); }
+  .lb .panneau {
+    width: min(84vw, 760px); max-height: max(140px, 30vh); overflow-y: auto; overscroll-behavior: contain;
+    margin-top: 10px; color: #ddd; text-align: left;
+  }
+  /* Sans JavaScript le bouton est inerte : le résumé reste lisible, déplié. */
+  @media (scripting: enabled) { .lb:not([data-info-open]) .panneau { display: none; } }
+  .lb dl { margin-top: 18px; font-family: var(--font-body); font-size: 14px; line-height: 1.6; }
+  .lb dl div { display: flex; gap: 12px; flex-wrap: wrap; }
+  .lb dt { font-family: var(--font-digital); font-size: 12px; color: #999; min-width: 120px; padding-top: 2px; }
+  .lb dd { margin: 0; }
+  @keyframes lb-fond { from { background: rgba(0, 0, 0, 0); } }
+  @keyframes lb-entree { from { opacity: 0; transform: scale(0.94); } }
+  @media (prefers-reduced-motion: reduce) { .lb, .lb .contenu { animation: none; } }
+</style>
