@@ -362,15 +362,15 @@ function Accueil({ onEnter }) {
 
 /* ═══════════════════ MENU ═══════════════════ */
 /* Semis de points qui suivent la souris — variante du grain d'iirrm.ch que Vania a montré.
-   Un fin semis de points d'encre (pleins et gris) couvre la page ; autour du curseur, ils
-   sont happés et tournent autour de lui, puis regagnent leur place quand il s'éloigne.
+   Un fin semis de points d'encre (pleins et gris) couvre la page. Au repos, il ondule en
+   une houle très lente ; quand la souris bouge, les points proches glissent doucement vers
+   elle, sans tourner autour, puis regagnent leur place quand elle s'éloigne.
    Canvas fixe sans interaction ; coupé au tactile et en mouvement réduit (le semis reste,
-   immobile) ; la boucle s'endort dès que tout est revenu au repos.
+   immobile) ; la boucle se met en pause quand l'onglet est caché.
 
-   Deux retours de Vania : les points gênaient la lecture des titres du menu, ils pâlissent
-   donc vers le centre de l'écran ; et ils ne suivaient pas assez la souris. Un point happé
-   reste maintenant accroché au curseur et est entraîné dans son sillage, jusqu'à s'éloigner
-   de TETHER pixels de sa place : il lâche alors prise et revient. */
+   Retours de Vania : les points gênaient la lecture des titres du menu, ils pâlissent donc
+   vers le centre de l'écran. Puis (octobre) : la rotation autour du curseur faisait
+   aléatoire, elle voulait un suivi doux et rien d'autre qu'une vague légère au repos. */
 function DotField() {
   const ref = useRef(null);
   useEffect(() => {
@@ -379,12 +379,16 @@ function DotField() {
     const still = window.matchMedia('(prefers-reduced-motion: reduce)').matches
       || window.matchMedia('(pointer: coarse)').matches;
     const dpr = Math.min(window.devicePixelRatio || 1, 2);
-    const RADIUS = 240;      // portée de la capture autour du curseur
-    const TETHER = 460;      // distance à sa place au-delà de laquelle un point lâche prise
+    const RADIUS = 240;      // portée de l'attraction autour du curseur
+    const SHIFT = 38;        // déplacement maximal d'un point vers le curseur, en px
+    const SPRING = 0.035;    // raideur du retour vers la cible : plus bas = plus mou
+    const DAMP = 0.82;       // amortissement : pas de rebond
+    const WAVE_AMP = 2.6;    // amplitude de la houle au repos, en px
+    const WAVE_SPEED = (Math.PI * 2) / 9000; // une vague toutes les ~9 s
     const LEVELS = [0.14, 0.32, 0.55, 0.78, 1]; // opacités, du centre vers les bords
     let dots = [];
-    let w = 0, h = 0, raf = 0, awake = false;
-    const mouse = { x: -9999, y: -9999, vx: 0, vy: 0, active: false };
+    let w = 0, h = 0, raf = 0;
+    const mouse = { x: -9999, y: -9999, active: false };
     /* Opacité d'un point selon sa position : ellipse calée sur le bloc des titres, pâle au
        centre, pleine encre à partir des bords du bloc. */
     const level = (x, y) => {
@@ -409,7 +413,6 @@ function DotField() {
           hx, hy, x: hx, y: hy, vx: 0, vy: 0,
           r: 0.5 + seededRandom(i * 3 + 3) * 0.9,
           tone: seededRandom(i * 7 + 5) > 0.72 ? 1 : 0,
-          spin: seededRandom(i * 11) > 0.5 ? 1 : -1,
         };
       });
     };
@@ -432,42 +435,35 @@ function DotField() {
       ctx.globalAlpha = 1;
     };
 
-    const step = () => {
-      let moving = mouse.active;
-      // vitesse du curseur lissée, retombée à zéro quand il s'arrête
-      mouse.vx *= 0.82; mouse.vy *= 0.82;
+    const step = (now) => {
+      const t = now * WAVE_SPEED;
       for (const d of dots) {
-        let ax = (d.hx - d.x) * 0.008, ay = (d.hy - d.y) * 0.008; // rappel vers la place
+        // la place du point ondule : phase liée à la position, la houle traverse l'écran
+        let tx = d.hx + WAVE_AMP * Math.sin(t + d.hy * 0.011 + d.hx * 0.004);
+        let ty = d.hy + WAVE_AMP * Math.cos(t * 0.8 + d.hx * 0.009);
         if (mouse.active) {
-          // capture mesurée depuis la position courante : un point happé suit le curseur
-          const px = mouse.x - d.x, py = mouse.y - d.y;
-          const pd = Math.hypot(px, py) || 1;
-          const away = Math.hypot(d.x - d.hx, d.y - d.hy);
-          if (pd < RADIUS && away < TETHER) {
-            const pull = (1 - pd / RADIUS) * (1 - away / TETHER);
-            // attiré vers un anneau autour du curseur, entraîné tangentiellement et
-            // emporté dans le sillage du mouvement
-            const ring = 14 + d.r * 40;
-            const f = (pd - ring) * 0.05 * pull;
-            ax += (px / pd) * f - (py / pd) * d.spin * pull * 1.6 + mouse.vx * pull * 0.03;
-            ay += (py / pd) * f + (px / pd) * d.spin * pull * 1.6 + mouse.vy * pull * 0.03;
+          // la cible glisse vers le curseur, d'autant plus que le point est proche
+          const px = mouse.x - tx, py = mouse.y - ty;
+          const pd = Math.hypot(px, py);
+          if (pd < RADIUS && pd > 0) {
+            const k = 1 - pd / RADIUS;
+            const pull = Math.min(SHIFT * k * k, pd * 0.5);
+            tx += (px / pd) * pull; ty += (py / pd) * pull;
           }
         }
-        d.vx = (d.vx + ax) * 0.87; d.vy = (d.vy + ay) * 0.87;
+        d.vx = (d.vx + (tx - d.x) * SPRING) * DAMP;
+        d.vy = (d.vy + (ty - d.y) * SPRING) * DAMP;
         d.x += d.vx; d.y += d.vy;
-        if (Math.abs(d.vx) + Math.abs(d.vy) > 0.02 || Math.abs(d.x - d.hx) + Math.abs(d.y - d.hy) > 0.3) moving = true;
       }
       draw();
-      if (moving) raf = requestAnimationFrame(step);
-      else awake = false;
+      raf = requestAnimationFrame(step);
     };
-    const wake = () => { if (!awake) { awake = true; raf = requestAnimationFrame(step); } };
+    const start = () => { cancelAnimationFrame(raf); raf = requestAnimationFrame(step); };
 
-    const onMove = (e) => {
-      if (mouse.active) { mouse.vx += e.clientX - mouse.x; mouse.vy += e.clientY - mouse.y; }
-      mouse.x = e.clientX; mouse.y = e.clientY; mouse.active = true; wake();
-    };
-    const onLeave = () => { mouse.active = false; mouse.vx = mouse.vy = 0; wake(); };
+    const onMove = (e) => { mouse.x = e.clientX; mouse.y = e.clientY; mouse.active = true; };
+    const onLeave = () => { mouse.active = false; };
+    // pas d'animation dans un onglet caché
+    const onVisibility = () => { if (document.hidden) cancelAnimationFrame(raf); else start(); };
     const onResize = () => { seed(); draw(); };
     seed(); draw();
     // le thème change la couleur de l'encre : on redessine quand <html data-theme> bouge
@@ -477,6 +473,8 @@ function DotField() {
     if (!still) {
       window.addEventListener('pointermove', onMove);
       document.documentElement.addEventListener('pointerleave', onLeave);
+      document.addEventListener('visibilitychange', onVisibility);
+      start();
     }
     return () => {
       cancelAnimationFrame(raf);
@@ -484,6 +482,7 @@ function DotField() {
       window.removeEventListener('resize', onResize);
       window.removeEventListener('pointermove', onMove);
       document.documentElement.removeEventListener('pointerleave', onLeave);
+      document.removeEventListener('visibilitychange', onVisibility);
     };
   }, []);
   return <canvas ref={ref} aria-hidden="true" style={{
