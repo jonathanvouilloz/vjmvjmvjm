@@ -1,0 +1,46 @@
+---
+/* Blocs de contenu communs (Coin lecture, infos d'album, news, résumé Kinematik, bio) :
+   texte · image · vidéo · audio · lien. Le style vient de `.vjm-prose` (global.css). */
+import { asset, renderMarkdown } from "../lib/content";
+import { image } from "../lib/images";
+
+interface Props { blocks?: any[]; class?: string }
+const { blocks = [], class: className = "" } = Astro.props;
+---
+{blocks.length > 0 && (
+  <div class={`vjm-prose ${className}`}>
+    {blocks.map((b) => {
+      if (b.type === "text") return <div class={b.variante === "liste" ? "vjm-liste" : undefined} set:html={renderMarkdown(b.md)} />;
+      if (b.type === "image") {
+        const img = image(b.src);
+        return (
+          <figure>
+            <img src={asset(b.src)} alt={b.alt || ""} loading="lazy" width={img?.w} height={img?.h} />
+            {b.legende && <figcaption>{b.legende}</figcaption>}
+          </figure>
+        );
+      }
+      if (b.type === "video") return (
+        <figure>
+          <div style="width:100%;aspect-ratio:16 / 9;background:#000">
+            {b.vimeoId ? (
+              <iframe src={`https://player.vimeo.com/video/${b.vimeoId}`} title={b.legende || "Vidéo"} loading="lazy"
+                style="width:100%;height:100%;border:0;display:block" allow="autoplay; fullscreen; picture-in-picture" allowfullscreen></iframe>
+            ) : (
+              <video src={b.url} controls preload="metadata" style="width:100%;height:100%;display:block"></video>
+            )}
+          </div>
+          {b.legende && <figcaption>{b.legende}</figcaption>}
+        </figure>
+      );
+      if (b.type === "audio") return (
+        <figure>
+          {b.titre && <figcaption class="vjm-audio-title">{b.titre}</figcaption>}
+          <audio src={asset(b.src)} controls preload="none" style="width:100%"></audio>
+        </figure>
+      );
+      if (b.type === "lien") return <p><a href={b.url} target="_blank" rel="noopener noreferrer">{b.label} ↗</a></p>;
+      return null;
+    })}
+  </div>
+)}

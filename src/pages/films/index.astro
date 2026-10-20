@@ -1,0 +1,47 @@
+---
+import { getCollection } from "astro:content";
+import Base from "../../layouts/Base.astro";
+import Header from "../../components/Header.astro";
+import Page from "../../components/Page.astro";
+import BackLink from "../../components/BackLink.astro";
+
+const albums = await getCollection("albums");
+---
+<Base title="Films pour les oreilles — Vania Jaikin Miyazaki" path="/films">
+  <Header />
+  <Page>
+    <BackLink href="/menu" />
+    <div class="liste">
+      {albums.map((a, i) => (
+        <div class="ligne">
+          <a href={`/films/${a.id}`} class="titre">{a.data.titre}</a>
+          {/* La pop-up du « i » arrive en Tâche 7 : bouton inerte d'ici là. */}
+          {a.data.resume && (
+            <button type="button" data-album-info={a.id} aria-label={`Infos — ${a.data.titre}`} title="Infos">
+              <img src={`/assets/brand/info-album-${Math.min(i + 1, 3)}.svg`} alt="" aria-hidden="true" />
+            </button>
+          )}
+        </div>
+      ))}
+    </div>
+  </Page>
+</Base>
+<style>
+  .liste { border-top: 1px solid var(--border); }
+  .ligne {
+    display: flex; align-items: center; justify-content: space-between; gap: 24px;
+    padding: clamp(30px, 4vw, 52px) 0; border-bottom: 1px solid var(--border);
+  }
+  .titre {
+    color: var(--fg); font-family: var(--font-heading); font-size: clamp(1.1rem, 1.8vw, 1.45rem);
+    text-decoration: none; transition: opacity 0.2s; opacity: 0.9; line-height: 1.25;
+  }
+  .titre:hover { opacity: 1; }
+  button {
+    background: none; border: none; color: var(--fg-muted); width: 44px; height: 44px; cursor: pointer;
+    flex-shrink: 0; display: flex; align-items: center; justify-content: center;
+    transition: opacity 0.2s; opacity: 0.62;
+  }
+  button:hover { opacity: 1; }
+  img { width: 28px; height: 28px; object-fit: contain; display: block; filter: var(--ink-invert); }
+</style>

@@ -1,0 +1,64 @@
+---
+/* Vignette du Coin lecture : taille, décalage et inclinaison tirés de `seededRandom` (même
+   mise en page à chaque visite), en deux jeux de valeurs — bureau et mobile (≤ 760px). */
+import SketchFrame from "./SketchFrame.astro";
+import { asset, seededRandom as rnd, typo } from "../lib/content";
+import { image } from "../lib/images";
+
+interface Props { text: { id: string; data: any }; index: number }
+const { text, index } = Astro.props;
+const t = text.data;
+const v = t.vignette;
+const img = v.type === "image" && v.image ? image(v.image) : null;
+
+const wDesk = 72 + rnd(index + 300) * 28;
+const wMob = 92 + rnd(index + 300) * 8;
+const ty = ((rnd(index + 100) - 0.5) * 16).toFixed(1);
+const vars = [
+  `--w:${wDesk.toFixed(1)}%`, `--ml:${((100 - wDesk) * rnd(index + 250)).toFixed(1)}%`,
+  `--rot:${((rnd(index + 7) - 0.5) * 4.5).toFixed(2)}deg`,
+  `--w-m:${wMob.toFixed(1)}%`, `--ml-m:${((100 - wMob) * rnd(index + 250)).toFixed(1)}%`,
+  `--rot-m:${((rnd(index + 7) - 0.5) * 2).toFixed(2)}deg`,
+  `--ty:${ty}px`,
+].join(";");
+const scale = 0.9 + rnd(index + 40) * 0.35; // la taille du texte varie d'une vignette à l'autre
+---
+<a href={`/lecture/${text.id}`} class="tuile" aria-label={`Lire « ${t.titre} »`} style={vars}>
+  <span class="cadre">
+    <SketchFrame seed={index + 11} strokeWidth={1.1} />
+    {v.type === "image" && v.image ? (
+      <img src={asset(v.image)} alt="" loading="lazy" width={img?.w} height={img?.h} />
+    ) : v.type === "extrait" && v.extrait ? (
+      <>
+        <span class="extrait" style={`font-size:${(1.08 * scale).toFixed(2)}rem`}>« {typo(v.extrait).trim()} »</span>
+        {t.surtitre && <span class="surtitre">{t.surtitre}</span>}
+        <span class="titre" style="font-size:0.98rem">{t.titre}</span>
+      </>
+    ) : (
+      <>
+        {t.surtitre && <span class="surtitre">{t.surtitre}</span>}
+        <span class="titre" style={`font-size:${(1.5 * scale).toFixed(2)}rem`}>{t.titre}</span>
+      </>
+    )}
+  </span>
+</a>
+<style>
+  .tuile {
+    display: block; break-inside: avoid; width: var(--w); margin-left: var(--ml); margin-bottom: 56px;
+    color: var(--fg); text-decoration: none; text-align: left; position: relative;
+    transform: rotate(var(--rot)) translateY(var(--ty)); transition: transform 0.3s ease;
+  }
+  .tuile:hover { transform: rotate(var(--rot)) translateY(var(--ty)) scale(1.025); }
+  .cadre { display: block; position: relative; padding: clamp(22px, 2.6vw, 34px); }
+  img { display: block; width: 100%; height: auto; }
+  .extrait { display: block; font-family: var(--font-body); font-style: italic; line-height: 1.55; margin-bottom: 18px; }
+  .surtitre {
+    display: block; font-family: var(--font-digital); font-size: 11px; letter-spacing: 0.14em;
+    text-transform: uppercase; color: var(--fg-muted); margin-bottom: 8px;
+  }
+  .titre { display: block; font-family: var(--font-heading); line-height: 1.2; }
+  @media (max-width: 760px) {
+    .tuile { width: var(--w-m); margin-left: var(--ml-m); margin-bottom: 36px; transform: rotate(var(--rot-m)) translateY(var(--ty)); }
+    .tuile:hover { transform: rotate(var(--rot-m)) translateY(var(--ty)) scale(1.025); }
+  }
+</style>

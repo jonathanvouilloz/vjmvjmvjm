@@ -7,10 +7,11 @@ interface Props {
   description?: string;
   /* Chemin canonique de la page (`/`, `/menu`…), résolu contre `site` de astro.config. */
   path?: string;
+  lang?: string;
 }
 const site = (await getEntry("site", "site"))!.data;
 const NAME = "Vania Jaikin Miyazaki";
-const { title = NAME, description = site.description, path = Astro.url.pathname } = Astro.props;
+const { title = NAME, description = site.description, path = Astro.url.pathname, lang = "fr" } = Astro.props;
 const canonical = new URL(path, Astro.site).href;
 
 // Newsreader et Manrope servent partout ; la police du menu s'y ajoute si c'en est une autre.
@@ -19,7 +20,7 @@ const menuFamily = menuFont === "Manrope" ? "" : `family=${menuFont.replace(/\s+
 const fonts = `https://fonts.googleapis.com/css2?${menuFamily}family=Manrope:wght@300..600&family=Newsreader:ital,opsz,wght@0,6..72,300..600;1,6..72,300..500&display=swap`;
 ---
 <!doctype html>
-<html lang="fr" data-theme="light" style={`--font-menu: '${menuFont}', sans-serif`}>
+<html lang={lang} data-theme="light" style={`--font-menu: '${menuFont}', sans-serif`}>
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />

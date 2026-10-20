@@ -1,0 +1,81 @@
+---
+/* La bio « sérieuse » est sur la page, en français ou en anglais (deux URL : /bio et /en/bio).
+   L'autre — la vraie, dit Vania — attend derrière un œil dessiné ; sa pop-up arrive en Tâche 7. */
+import { getEntry } from "astro:content";
+import Base from "../layouts/Base.astro";
+import Header from "../components/Header.astro";
+import Page from "../components/Page.astro";
+import Blocks from "../components/Blocks.astro";
+import { asset } from "../lib/content";
+import { image } from "../lib/images";
+
+interface Props { lang: "fr" | "en" }
+const { lang } = Astro.props;
+const site = (await getEntry("site", "site"))!.data;
+const bio = (await getEntry("bio", "bio"))!.data;
+const textes = bio[lang];
+// Portrait par défaut ; la Tâche 5 en tire un au hasard dans `data-portraits` au chargement.
+const portraits = bio.portraits.map(asset);
+const portrait = bio.portraits[0] ? image(bio.portraits[0]) : null;
+const langs = [{ code: "fr", label: "FR", href: "/bio" }, { code: "en", label: "EN", href: "/en/bio" }];
+---
+<Base lang={lang} title="Bio — Vania Jaikin Miyazaki" path={lang === "en" ? "/en/bio" : "/bio"}>
+  <Header />
+  <Page>
+    <div class="grille">
+      <div class="texte">
+        <div role="group" aria-label="Langue de la bio" class="langues">
+          {langs.map((l, i) => (
+            <>
+              {i > 0 && <span aria-hidden="true" class="sep">·</span>}
+              <a href={l.href} lang={l.code} aria-current={l.code === lang ? "page" : undefined} class:list={{ actif: l.code === lang }}>{l.label}</a>
+            </>
+          ))}
+        </div>
+        <div lang={lang} class="pro"><Blocks blocks={textes.pro} /></div>
+        {site.bioOeilVisible && (
+          <button type="button" class="oeil" data-bio-perso aria-label={lang === "en" ? "The other bio" : "L’autre bio"}>
+            <img src="/assets/brand/nav-eye-middle.svg" alt="" aria-hidden="true" />
+          </button>
+        )}
+        <p class="email">{site.email}</p>
+      </div>
+      {portrait && (
+        <div class="portrait">
+          <img id="bio-portrait" src={asset(bio.portraits[0])} alt="Vania Jaikin Miyazaki" loading="lazy"
+            width={portrait.w} height={portrait.h} data-portraits={JSON.stringify(portraits)} />
+        </div>
+      )}
+    </div>
+  </Page>
+  <!-- La langue de la bio sert aussi aux playlists des albums (Playlists.jsx). -->
+  <script is:inline define:vars={{ lang }}>
+    try { localStorage.setItem("vjm-bio-lang", lang); } catch (e) {}
+  </script>
+</Base>
+<style>
+  .grille { display: grid; grid-template-columns: 1fr 0.8fr; gap: var(--block-gap); align-items: start; }
+  .texte { max-width: 720px; }
+  .langues { display: flex; align-items: center; gap: 4px; margin-bottom: 22px; }
+  .langues a {
+    padding: 6px 4px; font-family: var(--font-digital); font-size: 12px; letter-spacing: 0.14em;
+    color: var(--fg-muted); text-decoration: none;
+  }
+  .langues a.actif { color: var(--fg); text-decoration: underline; text-underline-offset: 0.35em; }
+  .sep { color: var(--fg-subtle); }
+  .pro { font-size: clamp(1.05rem, 1.4vw, 1.2rem); }
+  .oeil {
+    margin-top: var(--block-gap); background: none; border: none; cursor: pointer; padding: 6px; line-height: 0;
+    color: var(--fg); opacity: 0.8; transition: opacity 0.25s, transform 0.3s ease;
+  }
+  .oeil:hover { opacity: 1; transform: scale(1.12) rotate(-4deg); }
+  .oeil img { width: 46px; height: 46px; object-fit: contain; display: block; filter: var(--ink-invert); }
+  .email { margin-top: 30px; font-size: 15px; color: var(--fg-muted); font-family: var(--font-body); }
+  .portrait { position: sticky; top: calc(var(--header-h) + 32px); }
+  .portrait img { width: 100%; aspect-ratio: 3 / 4; object-fit: cover; object-position: center; display: block; }
+  @media (max-width: 760px) {
+    .grille { grid-template-columns: 1fr; }
+    .portrait { position: static; order: -1; }
+    .portrait img { aspect-ratio: 4 / 5; }
+  }
+</style>
