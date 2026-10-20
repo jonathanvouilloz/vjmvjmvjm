@@ -31,7 +31,7 @@ const playlists = (a.playlists ?? []).filter((p) => p.url)
         </button>
       )}
     </div>
-    {/* Un seul lecteur sur la page : c'est lui que la Tâche 5 fera persister d'une page à l'autre. */}
+    {/* Non persisté : comme l'ancien AlbumPage, quitter la page démonte le lecteur et coupe le son. */}
     {episodes && <AudioPlayer client:load tracks={episodes} />}
     {playlists.length > 0 && <Playlists client:load playlists={playlists} title={a.titre} />}
     {a.contenu && <div class="vjm-prose contenu" set:html={renderMarkdown(a.contenu)} />}
