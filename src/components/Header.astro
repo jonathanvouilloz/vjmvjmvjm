@@ -8,13 +8,13 @@ import MenuDropdown from "../islands/MenuDropdown.jsx";
 import ThemeToggle from "./ThemeToggle.astro";
 import Popup from "./Popup.astro";
 import Blocks from "./Blocks.astro";
+import { inWindow, utcDay } from "../lib/news";
 import { SECTIONS_MENU, sigleSource } from "../lib/sigles";
 
 /* Toutes les annonces actives sont rendues avec leur fenêtre de dates ; le navigateur retient
    la première dont la fenêtre couvre le jour (comme l'ancien activeNews), sans rebuild. Sans
    JS, on garde celle qui l'est au moment du build. */
-const inWindow = (n: { debut?: string; fin?: string }, d: string) => (!n.debut || n.debut <= d) && (!n.fin || d <= n.fin);
-const today = new Date().toISOString().slice(0, 10);
+const today = utcDay();
 const items = (await getCollection("news")).map((n) => n.data).filter((n) => n.actif);
 const first = items.find((n) => inWindow(n, today));
 
@@ -76,14 +76,14 @@ const secondary = [{ label: "contact", href: "/contact" }, { label: "bio", href:
 
 <script>
   import "../scripts/popups";
+  import { inWindow, utcDay } from "../lib/news";
 
   // À chaque page (le module ne s'exécute qu'une fois sous ClientRouter) : l'en-tête peut être neuf.
   document.addEventListener("astro:page-load", () => {
-    const d = new Date().toISOString().slice(0, 10);
+    const d = utcDay();
     let found = false;
     document.querySelectorAll<HTMLElement>(".news[data-news]").forEach((el) => {
-      const { debut, fin } = el.dataset;
-      const ok = !found && (!debut || debut <= d) && (!fin || d <= fin);
+      const ok = !found && inWindow(el.dataset, d);
       el.hidden = !ok;
       found ||= ok;
     });

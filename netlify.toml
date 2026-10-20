@@ -3,7 +3,7 @@
   publish = "dist"
 
 [build.environment]
-  NODE_VERSION = "22"
+  NODE_VERSION = "22.22.0"
   PYTHON_VERSION = "3.13"
 
 # La branche `content` reçoit les enregistrements du CMS : elle n'est jamais construite.

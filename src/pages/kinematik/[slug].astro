@@ -40,7 +40,7 @@ const info = !!(v.resume?.length || v.generique?.length);
     {info && (
       <Fragment slot="info">
         <Blocks blocks={v.resume} class="vjm-prose-small" />
-        {v.generique?.length && <dl>{v.generique.map((g) => <div><dt>{g.role}</dt><dd>{g.noms}</dd></div>)}</dl>}
+        {v.generique?.length > 0 && <dl>{v.generique.map((g) => <div><dt>{g.role}</dt><dd>{g.noms}</dd></div>)}</dl>}
       </Fragment>
     )}
   </Lightbox>

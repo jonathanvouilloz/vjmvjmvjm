@@ -37,7 +37,7 @@ const ICONS: Record<string, string> = {
           <div class="encres">
             {INKS.map((c) => (
               <button type="button" data-ink={c.id} title={c.label} aria-label={c.label} style={`background:${c.css}`}
-                data-active={c.id === "ink" ? "" : undefined}></button>
+                data-active={c.id === "ink" ? "" : undefined} aria-pressed={c.id === "ink" ? "true" : "false"}></button>
             ))}
           </div>
           <button type="button" id="dessin-effacer" class="effacer">effacer</button>
@@ -179,7 +179,10 @@ const ICONS: Record<string, string> = {
     document.querySelectorAll<HTMLElement>("[data-ink]").forEach((b) =>
       b.addEventListener("click", () => {
         ink = b.dataset.ink!;
-        document.querySelectorAll("[data-ink]").forEach((o) => o.toggleAttribute("data-active", o === b));
+        document.querySelectorAll("[data-ink]").forEach((o) => {
+          o.toggleAttribute("data-active", o === b);
+          o.setAttribute("aria-pressed", String(o === b));
+        });
       }));
 
     const form = document.forms.namedItem("contact")!;

@@ -2,8 +2,9 @@
    fois sous ClientRouter, et l'en-tête est persisté). L'historique : src/lib/popup-history.ts. */
 import { openEntry, requestClose, isOpen } from "../lib/popup-history";
 
-function mount(el: HTMLElement, restoreFocus?: () => void) {
+function mount(el: HTMLElement, focusEl: HTMLElement | null, restoreFocus?: () => void) {
   document.body.append(el);
+  focusEl?.focus();
   // deux frames : la transition part de l'état initial
   requestAnimationFrame(() => requestAnimationFrame(() => el.setAttribute("data-show", "")));
   openEntry(() => { el.remove(); restoreFocus?.(); });
@@ -16,7 +17,7 @@ function closeButton(cls: string) {
   return b;
 }
 
-function openPopup(id: string) {
+function openPopup(id: string, trigger: HTMLElement) {
   const tpl = document.getElementById(id) as HTMLTemplateElement | null;
   if (!tpl) return;
   const back = document.createElement("div");
@@ -25,9 +26,10 @@ function openPopup(id: string) {
   back.setAttribute("aria-modal", "true");
   back.setAttribute("aria-label", tpl.dataset.label || "");
   back.append(tpl.content.cloneNode(true));
-  back.firstElementChild?.querySelector(".vjm-popup-body")?.before(closeButton("vjm-popup-close"));
+  const close = closeButton("vjm-popup-close");
+  back.firstElementChild?.querySelector(".vjm-popup-body")?.before(close);
   back.addEventListener("click", (e) => { if (e.target === back) requestClose(); });
-  mount(back);
+  mount(back, close, () => trigger.focus());
 }
 
 /* Aléa du jour : une image tirée au hasard à chaque clic, jamais au chargement. */
@@ -48,23 +50,22 @@ function openAlea(btn: HTMLElement) {
   back.addEventListener("click", (e) => { if (e.target === back) requestClose(); });
   const overflow = document.body.style.overflow;
   document.body.style.overflow = "hidden";
-  mount(back, () => { document.body.style.overflow = overflow; btn.focus(); });
-  close.focus();
+  mount(back, close, () => { document.body.style.overflow = overflow; btn.focus(); });
 }
 
 document.addEventListener("click", (e) => {
   const t = (e.target as Element).closest<HTMLElement>("button[data-news], button[data-album-info], button[data-bio-perso], button[data-alea]");
   if (!t || isOpen()) return;
   if (t.hasAttribute("data-alea")) openAlea(t);
-  else if (t.hasAttribute("data-news")) openPopup(`popup-news-${t.dataset.news}`);
-  else if (t.hasAttribute("data-album-info")) openPopup(`popup-album-${t.dataset.albumInfo}`);
-  else openPopup("popup-bio-perso");
+  else if (t.hasAttribute("data-news")) openPopup(`popup-news-${t.dataset.news}`, t);
+  else if (t.hasAttribute("data-album-info")) openPopup(`popup-album-${t.dataset.albumInfo}`, t);
+  else openPopup("popup-bio-perso", t);
 });
 
 document.addEventListener("keydown", (e) => {
   if (!isOpen()) return;
   if (e.key === "Escape") requestClose();
-  // aléa : le focus reste sur la croix, comme l'ancien piège à Tab
+  // aléa seulement : le focus reste sur la croix, comme l'ancien piège à Tab
   else if (e.key === "Tab") {
     const c = document.querySelector<HTMLElement>(".vjm-alea-close");
     if (c) { e.preventDefault(); c.focus(); }

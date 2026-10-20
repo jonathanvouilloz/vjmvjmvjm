@@ -9,8 +9,8 @@ const marked = new Marked({
   gfm: true,
   breaks: true,
   renderer: {
-    // Tout lien sortant s'ouvre à côté : le site est une page unique, en sortir fait perdre
-    // la lecture en cours.
+    // Tout lien sortant s'ouvre à côté : une page de lecture ou un lecteur ouvert dans l'onglet
+    // serait perdu en sortant du site.
     link(this: any, { href, title, tokens }: any) {
       const text = this.parser.parseInline(tokens);
       const external = /^https?:\/\//.test(href);

@@ -1,7 +1,7 @@
 """Optimise les copies de publication sans modifier les médias canoniques.
 
-Le build copie d'abord `assets/` vers `dist/assets/`. Ce script réencode uniquement les MP3
-de `dist` pour la diffusion web. Les masters sous `assets/` restent donc inchangés et chaque
+Le build copie d'abord `public/assets/` vers `dist/assets/`. Ce script réencode uniquement les MP3
+de `dist` pour la diffusion web. Les masters sous `public/assets/` restent donc inchangés et chaque
 build repart de la même source canonique.
 """
 
