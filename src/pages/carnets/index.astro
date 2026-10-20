@@ -33,10 +33,15 @@ const vars = (i: number) => [
 </Base>
 <script>
   // Apparition au scroll. Même seuil que l'ancien ScrollReveal ; le masquage initial est dans le CSS.
-  const obs = new IntersectionObserver((entries) => {
-    for (const e of entries) if (e.isIntersecting) { e.target.setAttribute("data-visible", ""); obs.unobserve(e.target); }
-  }, { threshold: 0.08, rootMargin: "0px 0px -30px 0px" });
-  document.querySelectorAll("[data-reveal]").forEach((el) => obs.observe(el));
+  // Relancé à chaque page (ClientRouter) ; l'observateur précédent, sur des tuiles retirées, est coupé.
+  let obs: IntersectionObserver | undefined;
+  document.addEventListener("astro:page-load", () => {
+    obs?.disconnect();
+    obs = new IntersectionObserver((entries, o) => {
+      for (const e of entries) if (e.isIntersecting) { e.target.setAttribute("data-visible", ""); o.unobserve(e.target); }
+    }, { threshold: 0.08, rootMargin: "0px 0px -30px 0px" });
+    document.querySelectorAll("[data-reveal]").forEach((el) => obs!.observe(el));
+  });
 </script>
 <style>
   .collage { column-count: 4; column-gap: 32px; }

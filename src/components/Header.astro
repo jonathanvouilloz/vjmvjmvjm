@@ -1,7 +1,8 @@
 ---
 /* En-tête constant sur toutes les pages : nom (+ news) à gauche · maison / étoile / thème /
    montagne au centre · ≡ à droite. Les anciens callbacks d'état sont des liens. */
-import { getCollection } from "astro:content";
+import { getCollection, getEntry } from "astro:content";
+import { asset } from "../lib/content";
 import MenuDropdown from "../islands/MenuDropdown.jsx";
 import ThemeToggle from "./ThemeToggle.astro";
 import { SECTIONS_MENU, sigleSource } from "../lib/sigles";
@@ -19,9 +20,13 @@ const sections = SECTIONS_MENU.map((s) => ({
   href: `/${s.id}`,
   sigles: { left: sigleSource(s.id, true), right: sigleSource(s.id, false) },
 }));
+// Pool de l'aléa du jour : la pop-up (Tâche 7) en tire une image au hasard à chaque clic, comme l'ancien openStar.
+const aleas = (await getEntry("aleas", "aleas"))!.data.aleas.map(asset);
 const secondary = [{ label: "contact", href: "/contact" }, { label: "bio", href: "/bio" }];
 ---
-<header>
+<!-- Persisté d'une page à l'autre et hors du fondu de page, comme l'ancien en-tête qui restait
+     en place pendant que le contenu changeait. -->
+<header transition:persist="header" transition:name="header" transition:animate="none">
   <div class="left">
     <a href="/bio" class="name" title="Bio" aria-label="Vania Jaikin Miyazaki">
       <!-- Nom en capitales dessiné par Vania et détouré ; l'encre noire s'inverse en sombre. -->
@@ -43,7 +48,7 @@ const secondary = [{ label: "contact", href: "/contact" }, { label: "bio", href:
 
   <div class="center">
     <a class="ib" href="/menu" title="Menu" aria-label="Menu"><img src="/assets/brand/nav-home.svg" alt="" aria-hidden="true" width="29" height="29" /></a>
-    <button class="ib" type="button" title="Aléa du jour" aria-label="Aléa du jour" data-alea><img src="/assets/brand/nav-star.svg" alt="" aria-hidden="true" width="27" height="27" /></button>
+    <button class="ib" type="button" title="Aléa du jour" aria-label="Aléa du jour" data-alea data-aleas={JSON.stringify(aleas)}><img src="/assets/brand/nav-star.svg" alt="" aria-hidden="true" width="27" height="27" /></button>
     <ThemeToggle />
     <a class="ib" href="/contact" title="Dessin & contact" aria-label="Dessin & contact"><img src="/assets/brand/nav-mountains.svg" alt="" aria-hidden="true" width="36" height="36" /></a>
   </div>
@@ -54,13 +59,16 @@ const secondary = [{ label: "contact", href: "/contact" }, { label: "bio", href:
 </header>
 
 <script>
-  const d = new Date().toISOString().slice(0, 10);
-  let found = false;
-  document.querySelectorAll<HTMLElement>(".news[data-news]").forEach((el) => {
-    const { debut, fin } = el.dataset;
-    const ok = !found && (!debut || debut <= d) && (!fin || d <= fin);
-    el.hidden = !ok;
-    found ||= ok;
+  // À chaque page (le module ne s'exécute qu'une fois sous ClientRouter) : l'en-tête peut être neuf.
+  document.addEventListener("astro:page-load", () => {
+    const d = new Date().toISOString().slice(0, 10);
+    let found = false;
+    document.querySelectorAll<HTMLElement>(".news[data-news]").forEach((el) => {
+      const { debut, fin } = el.dataset;
+      const ok = !found && (!debut || debut <= d) && (!fin || d <= fin);
+      el.hidden = !ok;
+      found ||= ok;
+    });
   });
 </script>
 

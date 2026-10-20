@@ -100,3 +100,14 @@ a { color: inherit; }
   0%, 100% { opacity: 0.4; }
   50% { opacity: 0.8; }
 }
+
+/* Navigation ClientRouter (Base.astro) : l'ancienne page s'efface d'un coup, la nouvelle entre
+   comme dans l'ancien PageTransition (0.55s, montée de 10px). Sur la racine plutôt que sur
+   <body> : un instantané de body morpherait entre deux hauteurs et positions de défilement.
+   L'en-tête, persisté, a son propre nom de transition et ne bouge pas. */
+::view-transition-old(root) { animation: none; opacity: 0; }
+::view-transition-new(root) { animation: vjm-page-in 0.55s ease both; }
+@keyframes vjm-page-in {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}

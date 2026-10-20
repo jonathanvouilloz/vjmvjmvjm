@@ -35,6 +35,13 @@ export default function MenuDropdown({ sections, secondary }) {
     return () => { cancelAnimationFrame(raf); window.removeEventListener("keydown", onKey); };
   }, [open]);
 
+  // L'en-tête est persisté d'une page à l'autre : on referme après navigation, comme l'ancien go().
+  useEffect(() => {
+    const close = () => setOpen(false);
+    document.addEventListener("astro:after-swap", close);
+    return () => document.removeEventListener("astro:after-swap", close);
+  }, []);
+
   return (
     <>
       <button type="button" className="vjm-md-btn" title="Menu" aria-label="Menu" aria-expanded={open}
@@ -43,8 +50,9 @@ export default function MenuDropdown({ sections, secondary }) {
       </button>
       {open && (
         /* conteneur transparent plein écran : capte le clic extérieur sans masquer la page */
-        <div className="vjm-md-backdrop" onClick={() => setOpen(false)}>
-          <nav className="vjm-md-panel" data-show={show || undefined} onClick={(e) => e.stopPropagation()}>
+        /* pas de stopPropagation sur le panneau : le clic d'un lien doit remonter jusqu'au ClientRouter */
+        <div className="vjm-md-backdrop" onClick={(e) => { if (e.target === e.currentTarget) setOpen(false); }}>
+          <nav className="vjm-md-panel" data-show={show || undefined}>
             {sections.map((it, i) => (
               <a key={it.id} href={it.href} className="vjm-md-item" data-show={show || undefined}
                 style={{ transitionDelay: `${i * 0.04}s, ${i * 0.04}s, 0s` }}>

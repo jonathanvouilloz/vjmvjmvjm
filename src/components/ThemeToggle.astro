@@ -22,7 +22,8 @@
   const root = document.documentElement;
   const label = () => document.querySelectorAll<HTMLElement>(".theme-toggle").forEach((b) =>
     b.setAttribute("aria-label", root.dataset.theme === "dark" ? "Activer le thème clair" : "Activer le thème sombre"));
-  label();
+  // le bouton peut être neuf après une navigation ClientRouter (venue de l'accueil, sans en-tête)
+  document.addEventListener("astro:page-load", label);
   // délégation sur le document : le bouton peut être remplacé par une navigation sans perdre l'écouteur
   document.addEventListener("click", (e) => {
     if (!(e.target as Element).closest(".theme-toggle")) return;

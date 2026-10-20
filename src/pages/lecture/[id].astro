@@ -39,11 +39,15 @@ const t = texte.data;
 </Base>
 <script>
   // Les ancres de notes défilent en douceur, sans écrire `#note-1` dans l'URL (comme avant).
-  document.querySelector("article")?.addEventListener("click", (e) => {
-    const a = (e.target as Element).closest('a[href^="#note-"], a[href^="#ref-"]');
-    if (!a) return;
-    e.preventDefault();
-    document.getElementById(a.getAttribute("href")!.slice(1))?.scrollIntoView({ behavior: "smooth", block: "center" });
+  // Posé sur l'article de chaque page (ClientRouter) et non sur le document : il doit annuler le
+  // clic avant que le routeur, à l'écoute du document, ne l'intercepte.
+  document.addEventListener("astro:page-load", () => {
+    document.querySelector("article")?.addEventListener("click", (e) => {
+      const a = (e.target as Element).closest('a[href^="#note-"], a[href^="#ref-"]');
+      if (!a) return;
+      e.preventDefault();
+      document.getElementById(a.getAttribute("href")!.slice(1))?.scrollIntoView({ behavior: "smooth", block: "center" });
+    });
   });
 </script>
 <style>

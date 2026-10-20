@@ -1,6 +1,7 @@
 ---
 import "../styles/global.css";
 import { getEntry } from "astro:content";
+import { ClientRouter } from "astro:transitions";
 
 interface Props {
   title?: string;
@@ -41,12 +42,21 @@ const fonts = `https://fonts.googleapis.com/css2?${menuFamily}family=Manrope:wgh
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href={fonts} rel="stylesheet" />
     <!-- Thème mémorisé, appliqué avant le premier rendu pour éviter l'éclair clair ; le
-         stockage peut être indisponible (navigation privée), le thème clair reste le défaut. -->
+         stockage peut être indisponible (navigation privée), le thème clair reste le défaut.
+         Le ClientRouter recopie les attributs de <html> de la page reçue (data-theme="light") :
+         on réapplique après chaque échange, avant l'affichage. -->
     <script is:inline>
-      try {
-        if (localStorage.getItem("vjm-theme") === "dark") document.documentElement.dataset.theme = "dark";
-      } catch (e) {}
+      (function () {
+        function theme() {
+          try {
+            if (localStorage.getItem("vjm-theme") === "dark") document.documentElement.dataset.theme = "dark";
+          } catch (e) {}
+        }
+        theme();
+        document.addEventListener("astro:after-swap", theme);
+      })();
     </script>
+    <ClientRouter />
     <slot name="head" />
   </head>
   <body>

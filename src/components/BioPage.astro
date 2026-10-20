@@ -14,7 +14,7 @@ const { lang } = Astro.props;
 const site = (await getEntry("site", "site"))!.data;
 const bio = (await getEntry("bio", "bio"))!.data;
 const textes = bio[lang];
-// Portrait par défaut ; la Tâche 5 en tire un au hasard dans `data-portraits` au chargement.
+// Portrait par défaut ; le script de bas de page en tire un au hasard dans `data-portraits`.
 const portraits = bio.portraits.map(asset);
 const portrait = bio.portraits[0] ? image(bio.portraits[0]) : null;
 const langs = [{ code: "fr", label: "FR", href: "/bio" }, { code: "en", label: "EN", href: "/en/bio" }];
@@ -48,11 +48,23 @@ const langs = [{ code: "fr", label: "FR", href: "/bio" }, { code: "en", label: "
       )}
     </div>
   </Page>
-  <!-- La langue de la bio sert aussi aux playlists des albums (Playlists.jsx). -->
-  <script is:inline define:vars={{ lang }}>
+  <!-- La langue de la bio sert aussi aux playlists des albums (Playlists.jsx). Rejoué à chaque
+       visite : sans data-astro-rerun, le ClientRouter ne relance pas un script déjà vu (fr → en → fr). -->
+  <script is:inline data-astro-rerun define:vars={{ lang }}>
     try { localStorage.setItem("vjm-bio-lang", lang); } catch (e) {}
   </script>
 </Base>
+<script>
+  /* Portrait tiré au hasard à chaque visite, comme l'ancien useMemo au montage de BioPage. */
+  document.addEventListener("astro:page-load", () => {
+    const img = document.getElementById("bio-portrait") as HTMLImageElement | null;
+    if (!img) return;
+    try {
+      const pool: string[] = JSON.parse(img.dataset.portraits || "[]");
+      if (pool.length) img.src = pool[Math.floor(Math.random() * pool.length)];
+    } catch {}
+  });
+</script>
 <style>
   .grille { display: grid; grid-template-columns: 1fr 0.8fr; gap: var(--block-gap); align-items: start; }
   .texte { max-width: 720px; }

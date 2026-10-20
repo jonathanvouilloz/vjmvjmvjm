@@ -65,12 +65,15 @@ const vars = (i: number) => {
 </Base>
 <script>
   /* Le « i » : survol et focus clavier sont en CSS. Ici, seul l'épinglage (clic/tap, sans ouvrir le film). */
-  document.querySelectorAll<HTMLButtonElement>(".tuile .info").forEach((btn) => {
-    btn.addEventListener("click", () => btn.setAttribute("aria-expanded", String(btn.getAttribute("aria-expanded") !== "true")));
-    btn.addEventListener("blur", () => btn.setAttribute("aria-expanded", "false"));
-    // Au tactile le navigateur émet un mouseleave juste après le tap : seule une vraie sortie de souris referme.
-    btn.closest(".tuile")!.addEventListener("pointerleave", (e) => {
-      if ((e as PointerEvent).pointerType === "mouse") btn.setAttribute("aria-expanded", "false");
+  // Relancé à chaque page (ClientRouter) : les tuiles sont neuves à chaque visite, donc liées une seule fois.
+  document.addEventListener("astro:page-load", () => {
+    document.querySelectorAll<HTMLButtonElement>(".tuile .info").forEach((btn) => {
+      btn.addEventListener("click", () => btn.setAttribute("aria-expanded", String(btn.getAttribute("aria-expanded") !== "true")));
+      btn.addEventListener("blur", () => btn.setAttribute("aria-expanded", "false"));
+      // Au tactile le navigateur émet un mouseleave juste après le tap : seule une vraie sortie de souris referme.
+      btn.closest(".tuile")!.addEventListener("pointerleave", (e) => {
+        if ((e as PointerEvent).pointerType === "mouse") btn.setAttribute("aria-expanded", "false");
+      });
     });
   });
 </script>
