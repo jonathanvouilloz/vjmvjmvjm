@@ -16,29 +16,6 @@
       "episodes": []
     },
     {
-      "id": "mourir",
-      "titre": "Mourir c'est pas si grave",
-      "resume": "Est-ce que la vie s'arrête un jour ? Je suis allée en discuter avec quelques chercheurs, un moine bouddhiste, une directrice de pompes funèbres, deux médiums, un médecin en soins palliatifs… Et je raconte quelques petites histoires personnelles qui m'ont fait douter de la mort.",
-      "playlists": [],
-      "contenu": "",
-      "episodes": [
-        {
-          "id": 1,
-          "title": "Épisode 1",
-          "duration": "55:21",
-          "sec": 3321,
-          "src": "assets/audio/mourir/1.mp3"
-        },
-        {
-          "id": 2,
-          "title": "Épisode 2",
-          "duration": "56:07",
-          "sec": 3367,
-          "src": "assets/audio/mourir/2.mp3"
-        }
-      ]
-    },
-    {
       "id": "chronique",
       "titre": "Chroniques du dernier souffle",
       "resume": "En me baladant dans les méandres du festival Archipel, à Genève, je récolte de belles histoires vécues ou entendues, qui ont à voir avec notre finitude, avec le passage de cet état animé à cet autre état, dont on ne sait pas grand-chose.",
