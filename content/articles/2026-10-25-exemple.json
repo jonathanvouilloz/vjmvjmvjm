@@ -1,7 +1,7 @@
 {
   "titre": "Exemple de news",
   "date": "2026-10-25",
-  "publie": false,
+  "publie": true,
   "image": "assets/home/012-flying-teapot-ekoda.jpg",
   "corps": "Article d'exemple, à remplacer depuis le CMS (**Articles (news)**). Le texte est riche : *italique*, **gras**, [liens](https://example.com), titres et images.\n\n## Un intertitre\n\nSeul l'article publié le plus récent s'affiche sur le menu, sous le pli."
 }

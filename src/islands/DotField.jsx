@@ -3,7 +3,7 @@
    freiné à chaque image et ramené par le bord opposé s'il sort. Rien ne s'arrête : les points
    tournent et filent autour du curseur, et décrochent s'il va trop vite.
    Vit dans la section qui le contient (le haut du menu) et défile avec elle ; le curseur n'est
-   suivi que dedans. Mouvement réduit : semis immobile. Pause onglet caché ou section hors écran.
+   suivi que dedans, et l'attraction cesse dès qu'on défile vers la suite. Mouvement réduit : semis immobile. Pause onglet caché ou section hors écran.
    Le cleanup de l'effet retire RAF et écouteurs : l'île peut être démontée puis remontée. */
 import { useEffect, useRef } from 'react';
 
@@ -43,11 +43,13 @@ export default function DotField() {
     };
 
     const loop = () => {
+      // dès qu'on défile vers la suite, plus d'attraction : les points filent sur leur élan
+      const pull = canvas.getBoundingClientRect().top > -h * 0.05 ? GRAVITY : 0;
       for (const n of p) plot(n, false);
       for (const n of p) {
         const x = m.x - n.x, y = m.y - n.y;
         const a = Math.atan2(y, x);
-        const o = GRAVITY / (Math.sqrt(x * x + y * y) + 0.01);
+        const o = pull / (Math.sqrt(x * x + y * y) + 0.01);
         n.a += Math.cos(a) * o; n.b += Math.sin(a) * o;
         n.x += n.a; n.y += n.b;
         n.x += n.x >= w ? -w : n.x < 0 ? w : 0;
