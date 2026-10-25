@@ -179,7 +179,8 @@ export async function resolveImages(content, { root = "." } = {}) {
     }
   }
 
-  for (const key of ["bio", "news", "kinematik", "albums", "lecture"]) await resolveTextImages(content[key], b);
+  for (const a of content.articles || []) if (a.image) await b.image(a.image, { max: 1600 });
+  for (const key of ["bio", "news", "kinematik", "albums", "lecture", "articles"]) await resolveTextImages(content[key], b);
 
   // les listes brutes ne servent plus : seules les galeries résolues partent dans le bundle
   for (const key of ["carnets", "accueil", "portraits", "aleas"]) delete content[key];
@@ -194,7 +195,15 @@ const optional = (file, key) => (fs.existsSync(file) ? readJson(file)[key] || []
 
 // Les listes de `content/` dont resolveImages a besoin, telles que le CMS les écrit.
 export function loadImageSources(dir = "content") {
-  const lectureDir = path.join(dir, "lecture");
+  // dossier du CMS (un fichier par entrée), entrées non publiées exclues
+  const folder = (name) => {
+    const d = path.join(dir, name);
+    return fs.existsSync(d)
+      ? fs.readdirSync(d).filter((f) => f.endsWith(".json"))
+        .map((f) => ({ id: path.basename(f, ".json"), ...readJson(path.join(d, f)) }))
+        .filter((t) => t.publie !== false)
+      : [];
+  };
   const { portraits = [], ...bio } = readJson(path.join(dir, "bio.json"));
   return {
     bio,
@@ -205,11 +214,8 @@ export function loadImageSources(dir = "content") {
     carnets: optional(path.join(dir, "carnets.json"), "carnets"),
     accueil: optional(path.join(dir, "accueil.json"), "photos"),
     aleas: optional(path.join(dir, "aleas.json"), "aleas"),
-    lecture: fs.existsSync(lectureDir)
-      ? fs.readdirSync(lectureDir).filter((f) => f.endsWith(".json"))
-        .map((f) => ({ id: path.basename(f, ".json"), ...readJson(path.join(lectureDir, f)) }))
-        .filter((t) => t.publie !== false)
-      : [],
+    lecture: folder("lecture"),
+    articles: folder("articles"),
   };
 }
 

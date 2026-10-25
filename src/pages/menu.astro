@@ -5,14 +5,23 @@ import Sigle from "../components/Sigle.astro";
 import DotField from "../islands/DotField.jsx";
 import { SECTIONS_MENU } from "../lib/sigles";
 import { abs } from "../lib/seo";
+import { getCollection } from "astro:content";
+import { renderMarkdown } from "../lib/content";
+import { image, withImageVariants } from "../lib/images";
+
+// seule la dernière news publiée est affichée, sous le pli
+const [article] = (await getCollection("articles", (a) => a.data.publie))
+  .sort((a, b) => b.data.date.localeCompare(a.data.date));
+const cover = article?.data.image ? image(article.data.image) : null;
+const dateFr = (d: string) => new Date(`${d}T12:00:00Z`).toLocaleDateString("fr-CH", { day: "numeric", month: "long", year: "numeric" });
 ---
 <Base title="Menu — Vania Jaikin Miyazaki" path="/menu" ld={{
   "@type": "BreadcrumbList",
   itemListElement: [{ "@type": "ListItem", position: 1, name: "Accueil", item: abs("/") }, { "@type": "ListItem", position: 2, name: "Menu", item: abs("/menu") }],
 }}>
   <Header />
-  <DotField client:load />
-  <main>
+  <main class:list={{ "avec-news": article }}>
+    <DotField client:load />
     {SECTIONS_MENU.map((s) => (
       <a class="section" href={`/${s.id}`}>
         <Sigle id={s.id} flip />
@@ -25,7 +34,21 @@ import { abs } from "../lib/seo";
       <span aria-hidden="true">·</span>
       <a href="/bio">bio</a>
     </div>
+    {article && (
+      <a class="defiler" href="#news">
+        <span>dernière news</span>
+        <svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true"><path d="M2 5l5 5 5-5" fill="none" stroke="currentColor" stroke-width="1.2" /></svg>
+      </a>
+    )}
   </main>
+  {article && (
+    <article id="news" class="news">
+      <p class="news-date"><time datetime={article.data.date}>{dateFr(article.data.date)}</time></p>
+      <h2>{article.data.titre}</h2>
+      {cover && <img class="news-image" src={cover.src} width={cover.w} height={cover.h} alt="" loading="lazy" />}
+      <div class="vjm-prose" set:html={withImageVariants(renderMarkdown(article.data.corps))} />
+    </article>
+  )}
 </Base>
 
 <style>
@@ -48,6 +71,27 @@ import { abs } from "../lib/seo";
   }
   .secondaires a:hover { color: var(--fg); }
   .secondaires span { color: var(--fg-subtle); font-size: 16px; }
+  /* avec une news : le menu laisse 10 % de l'écran pour annoncer la suite */
+  main.avec-news { min-height: 90vh; min-height: 90svh; }
+  .defiler {
+    position: absolute; bottom: 18px; left: 50%; transform: translateX(-50%);
+    display: flex; flex-direction: column; align-items: center; gap: 6px;
+    color: var(--fg-muted); text-decoration: none; font-family: var(--font-body);
+    font-size: 14px; letter-spacing: 0.07em; transition: color 0.25s;
+  }
+  .defiler:hover { color: var(--fg); }
+  .defiler svg { animation: descente 2.2s ease-in-out infinite; }
+  @keyframes descente { 0%, 100% { transform: translateY(0); opacity: 0.5; } 50% { transform: translateY(5px); opacity: 1; } }
+  .news {
+    position: relative; z-index: 1; max-width: 720px; margin: 0 auto;
+    padding: clamp(48px, 10vh, 120px) var(--container-pad) var(--page-bottom);
+  }
+  .news-date { font-family: var(--font-digital); font-size: 13px; letter-spacing: 0.08em; color: var(--fg-muted); text-transform: uppercase; }
+  .news h2 {
+    font-family: var(--font-heading); font-weight: var(--heading-weight); letter-spacing: var(--heading-spacing);
+    font-size: clamp(1.8rem, 4vw, 2.6rem); line-height: 1.15; margin: 12px 0 var(--block-gap);
+  }
+  .news-image { display: block; width: 100%; height: auto; margin-bottom: var(--block-gap); }
   @keyframes apparition { from { opacity: 0; } to { opacity: 1; } }
-  @media (prefers-reduced-motion: reduce) { main { animation: none; } }
+  @media (prefers-reduced-motion: reduce) { main, .defiler svg { animation: none; } }
 </style>
