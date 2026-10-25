@@ -60,6 +60,28 @@ collections:
         fields:
           - { name: md, label: "Note (la 1re répond à [^1], etc.)", widget: markdown }
 
+  - name: articles
+    label: Articles (news)
+    label_singular: article
+    folder: content/articles
+    extension: json
+    format: json
+    create: true
+    slug: "{{year}}-{{month}}-{{day}}-{{slug}}"
+    identifier_field: titre
+    summary: "{{date}} · {{titre}}"
+    sortable_fields: [date, titre]
+    fields:
+      - { name: titre, label: Titre, widget: string }
+      - { name: date, label: "Date de publication", widget: datetime, time_format: false, date_format: "YYYY-MM-DD", format: "YYYY-MM-DD" }
+      - { name: publie, label: Publié, widget: boolean, default: true }
+      - { name: image, label: "Image principale", widget: image, required: false }
+      - name: corps
+        label: Texte
+        widget: markdown
+        modes: [rich_text, raw]
+        hint: "Titres, gras, liens et images s'insèrent depuis la barre d'outils. Pour une vidéo, coller l'adresse Vimeo ou YouTube seule sur sa ligne."
+
 # Une entrée par page dans la barre latérale : un clic ouvre directement l’éditeur.
 # `news` vient en premier car il définit l’ancre `&blocks` réutilisée par bio et kinematik.
 singletons:

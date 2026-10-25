@@ -164,4 +164,17 @@ const lecture = defineCollection({
   }),
 });
 
-export const collections = { site, bio, accueil, aleas, news, kinematik, albums, carnets, lecture };
+/* Articles de news (≠ `news`, l'annonce datée sous le nom) : un fichier par article. Le menu
+   affiche le plus récent publié sous le pli. */
+const articles = defineCollection({
+  loader: glob({ pattern: "*.json", base: "content/articles", generateId: ({ entry }) => entry.replace(/\.json$/, "") }),
+  schema: z.object({
+    titre: z.string(),
+    date: day,
+    publie: z.boolean().default(true),
+    image: image.optional(),
+    corps: z.string(),
+  }),
+});
+
+export const collections = { site, bio, accueil, aleas, news, kinematik, albums, carnets, lecture, articles };
