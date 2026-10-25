@@ -18,3 +18,5 @@ Format : `date | décision | contexte | alternatives considérées`
 - 2026-10-20 | Ancien pipeline supprimé (`precompile.mjs`, `tools/build-content.mjs`, `design-extract/`, `build.py`, `tools/fetch-thumbs.py`, `tools/package-netlify.py`, Babel) | Remplacé par Astro ; l'historique git garde tout. Perte : poster Vimeo plus récupéré automatiquement | Archiver `design-extract/`
 - 2026-10-20 | Node `>=22.22.0` (`engines`, `NODE_VERSION`) | Exigence d'Astro 7 | —
 - 2026-10-20 | Tests de pages sur `dist/`, ignorés si `dist/` est absent | Les anciens tests lisaient des regex sur le JSX | Build dans le test
+- 2026-10-25 | Collection `articles` distincte de `news`, un fichier JSON par article ; le menu montre le plus récent publié | `news` est l'annonce unique en pop-up, pas un fil | Étendre `news` en liste (casse l'ancre `&blocks` et la pop-up)
+- 2026-10-25 | `DotField` : port de l'effet iirrm.ch (5000 pixels, gravité 20/distance, friction 0.96, `putImageData`), canvas dans `main` | Rendu voulu par la cliente comme la référence ; remplace la houle douce du 2026-10-20 | Garder le semis `Path2D` à houle
