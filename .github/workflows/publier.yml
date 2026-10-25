@@ -63,7 +63,8 @@ jobs:
           fi
           echo "$pending modification(s) à publier."
           git checkout -B main origin/main
-          git merge --no-edit origin/content -m "content: publication des modifications du CMS"
+          # --no-ff : la tête de main doit être ce merge, pas un commit « [skip ci] » du CMS que Netlify ignorerait
+          git merge --no-ff --no-edit origin/content -m "content: publication des modifications du CMS"
           git push origin main
           # content rattrape main (avance rapide) pour repartir du même point
           git push origin main:content
