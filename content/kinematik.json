@@ -273,7 +273,7 @@
       "generique": []
     },
     {
-      "id": "k17",
+      "id": "k18",
       "titre": "Coup de coeur#4 Hideki Sando",
       "slug": "",
       "vignette": "/assets/Hideki.jpg",
@@ -289,7 +289,7 @@
       "generique": []
     },
     {
-      "id": "k18",
+      "id": "k19",
       "titre": "Billie Bird, La Nuit",
       "slug": "",
       "vignette": "/assets/Billie Bird.jpg",
@@ -297,6 +297,38 @@
       "duree": "1'57''",
       "annee": 2018,
       "vimeoId": "289317533",
+      "hash": "",
+      "trailer": false,
+      "mention": "",
+      "information": "",
+      "resume": [],
+      "generique": []
+    },
+    {
+      "id": "k20",
+      "titre": "Le Pistolet de Mama Rosin",
+      "slug": "",
+      "vignette": "/assets/MamaRosin le pistolet.jpg",
+      "sousTitre": "",
+      "duree": "3'27''",
+      "annee": 2013,
+      "vimeoId": "63822317",
+      "hash": "",
+      "trailer": false,
+      "mention": "",
+      "information": "",
+      "resume": [],
+      "generique": []
+    },
+    {
+      "id": "k21",
+      "titre": "Paraît qu'y a pas l'temps",
+      "slug": "",
+      "vignette": "/assets/Paraît Mama Rosin.jpg",
+      "sousTitre": "",
+      "duree": "3'18''",
+      "annee": 2013,
+      "vimeoId": "63832181",
       "hash": "",
       "trailer": false,
       "mention": "",
