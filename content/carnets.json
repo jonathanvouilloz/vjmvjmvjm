@@ -199,6 +199,10 @@
     {
       "image": "assets/carnets/vol.jpg",
       "titre": "Vol"
+    },
+    {
+      "image": "/assets/DIscussion avec mon comptable.jpg",
+      "titre": "Discussion avec mon comptable"
     }
   ]
 }
