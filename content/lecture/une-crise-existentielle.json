@@ -1,0 +1,15 @@
+{
+  "titre": "Une crise existentielle",
+  "surtitre": "",
+  "publie": true,
+  "ordre": 1,
+  "contexte": "",
+  "contextePosition": "haut",
+  "vignette": {
+    "type": "titre",
+    "extrait": "",
+    "image": "/assets/Crise existentielle 2.jpeg"
+  },
+  "corps": "Une crise existentielle c'est un rocher dans ta chaussure.",
+  "notes": []
+}
