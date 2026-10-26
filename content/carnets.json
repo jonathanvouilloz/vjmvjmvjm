@@ -9,10 +9,6 @@
       "titre": "Analphabète"
     },
     {
-      "image": "assets/carnets/avocat.jpg",
-      "titre": "Avocat"
-    },
-    {
       "image": "assets/carnets/beignet-de-courgette.jpg",
       "titre": "Beignet de courgette"
     },
@@ -33,10 +29,6 @@
       "titre": "Café-croissant"
     },
     {
-      "image": "assets/carnets/chant-tout-court.jpg",
-      "titre": "Chant tout court"
-    },
-    {
       "image": "assets/carnets/chants-des-villes.jpg",
       "titre": "Chants des villes"
     },
@@ -51,14 +43,6 @@
     {
       "image": "assets/carnets/crise-existentielle-1.jpg",
       "titre": "Crise existentielle 1"
-    },
-    {
-      "image": "assets/carnets/crise-existentielle-2.jpg",
-      "titre": "Crise existentielle 2"
-    },
-    {
-      "image": "assets/carnets/crepe.jpg",
-      "titre": "Crêpe"
     },
     {
       "image": "assets/carnets/devinettes.jpg",
@@ -81,10 +65,6 @@
       "titre": "Flamenco"
     },
     {
-      "image": "assets/carnets/flaque.jpg",
-      "titre": "Flaque"
-    },
-    {
       "image": "assets/carnets/friture-polie.jpg",
       "titre": "Friture polie"
     },
@@ -105,16 +85,8 @@
       "titre": "Inspired day"
     },
     {
-      "image": "assets/carnets/l-arbre-et-la-nuit.jpg",
-      "titre": "L'arbre et la nuit"
-    },
-    {
       "image": "assets/carnets/la-soupe.jpg",
       "titre": "La soupe"
-    },
-    {
-      "image": "assets/carnets/le-livre-commencerait-par.jpg",
-      "titre": "Le livre commencerait par"
     },
     {
       "image": "assets/carnets/les-trucs-moches.jpg",
@@ -162,7 +134,7 @@
     },
     {
       "image": "assets/carnets/rage-2.jpg",
-      "titre": "Rage"
+      "titre": "Une rage si bien contenue"
     },
     {
       "image": "assets/carnets/rue-de-reve.jpg",
@@ -174,11 +146,11 @@
     },
     {
       "image": "assets/carnets/scan-13-01-13.jpg",
-      "titre": ""
+      "titre": "Aube"
     },
     {
       "image": "assets/carnets/scan-14-01-13.jpg",
-      "titre": ""
+      "titre": "Tartelette"
     },
     {
       "image": "assets/carnets/secrets.jpg",
@@ -190,7 +162,7 @@
     },
     {
       "image": "assets/carnets/suisse.jpg",
-      "titre": "Suisse"
+      "titre": "La Suisse"
     },
     {
       "image": "assets/carnets/tartine.jpg",
@@ -198,7 +170,7 @@
     },
     {
       "image": "assets/carnets/trebuche-chute-crise-gravite.jpg",
-      "titre": "Trébuche, chute, crise, gravité"
+      "titre": "Chut"
     },
     {
       "image": "assets/carnets/tache.jpg",
@@ -211,6 +183,10 @@
     {
       "image": "assets/carnets/vol.jpg",
       "titre": "Vol"
+    },
+    {
+      "image": "/assets/DIscussion avec mon comptable.jpg",
+      "titre": "Discussion avec mon comptable"
     }
   ]
 }
