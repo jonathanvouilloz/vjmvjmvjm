@@ -35,9 +35,8 @@ const dateFr = (d: string) => new Date(`${d}T12:00:00Z`).toLocaleDateString("fr-
       <a href="/bio">bio</a>
     </div>
     {article && (
-      <a class="defiler" href="#news">
-        <span>dernière news</span>
-        <svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true"><path d="M2 5l5 5 5-5" fill="none" stroke="currentColor" stroke-width="1.2" /></svg>
+      <a class="defiler" href="#news" aria-label="dernière news">
+        <img src="/assets/brand/news-scroll.svg" width="630" height="349" alt="" />
       </a>
     )}
   </main>
@@ -75,13 +74,11 @@ const dateFr = (d: string) => new Date(`${d}T12:00:00Z`).toLocaleDateString("fr-
   main.avec-news { min-height: 90vh; min-height: 90svh; }
   .defiler {
     position: absolute; bottom: 18px; left: 50%; transform: translateX(-50%);
-    display: flex; flex-direction: column; align-items: center; gap: 6px;
-    color: var(--fg-muted); text-decoration: none; font-family: var(--font-body);
-    font-size: 14px; letter-spacing: 0.07em; transition: color 0.25s;
+    opacity: 0.75; transition: opacity 0.25s;
   }
-  .defiler:hover { color: var(--fg); }
-  .defiler svg { animation: descente 2.2s ease-in-out infinite; }
-  @keyframes descente { 0%, 100% { transform: translateY(0); opacity: 0.5; } 50% { transform: translateY(5px); opacity: 1; } }
+  .defiler:hover { opacity: 1; }
+  .defiler img { display: block; width: clamp(96px, 12vw, 140px); height: auto; filter: var(--ink-invert); animation: descente 2.2s ease-in-out infinite; }
+  @keyframes descente { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(6px); } }
   .news {
     position: relative; z-index: 1; max-width: 720px; margin: 0 auto;
     padding: clamp(48px, 10vh, 120px) var(--container-pad) var(--page-bottom);
@@ -93,5 +90,5 @@ const dateFr = (d: string) => new Date(`${d}T12:00:00Z`).toLocaleDateString("fr-
   }
   .news-image { display: block; width: 100%; height: auto; margin-bottom: var(--block-gap); }
   @keyframes apparition { from { opacity: 0; } to { opacity: 1; } }
-  @media (prefers-reduced-motion: reduce) { main, .defiler svg { animation: none; } }
+  @media (prefers-reduced-motion: reduce) { main, .defiler img { animation: none; } }
 </style>
