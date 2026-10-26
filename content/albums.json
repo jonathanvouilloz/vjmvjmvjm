@@ -44,6 +44,21 @@
           "src": "assets/audio/chronique/3.mp3"
         }
       ]
+    },
+    {
+      "id": "Mourir",
+      "titre": "Mourir c'est pas si grave",
+      "resume": "Où vont nos morts ? Je suis allée en discuter avec quelques chercheurs, un moine bouddhiste, une directrice de pompes funèbres, deux médiums, un médecin en soins palliatifs… Et je raconte quelques petites histoires personnelles qui m'ont fait douter de la mort.",
+      "playlists": [
+        {
+          "plateforme": "autre",
+          "libelle": "Radio Bascule",
+          "langue": "fr",
+          "url": "https://radiobascule.ch/mourir-cest-pas-si-grave/191"
+        }
+      ],
+      "contenu": "Que fait-on lorsque l’un de nos défunts vient nous demander de lui rendre un service ?\n\nOn commence par faire ce qu’il nous a demandé  –parce qu’on est serviable–, puis on s’arrête un instant: où vont nos morts? Et par extension, qu’advient-il de nous une fois que notre coeur s’arrête de battre?\n\nAlors sans trop d’ambition, mais un peu quand même, on se lance dans une  enquête. Ici, elle sera existentielle, philosophique, intime, mais aussi naïve parfois, pour éviter toute raideur dans les idées.\n\nPour résoudre ce problème qui – mathématiquement– n’a épargné personne jusque-là, on s’aventure dans une exploration post-matérialiste. On dresse un état des lieux de nos peurs, une cartographie de nos croyances, en passant par un petit dynamitage de nos tabous. Pourquoi ne pas se réconcilier avec la mort et en faire un sujet fréquentable ? Et peut-être, qui sait, se réjouir de mourir un jour ?",
+      "episodes": []
     }
   ]
 }
