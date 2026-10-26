@@ -11,7 +11,7 @@ const clean = (p: string) => p.trim().replace(/^\/+/, "");
 /* Dimensions + src absolue, ou null si l'image n'est pas au manifeste (introuvable au build). */
 export function image(path: string): Img | null {
   const e = entries[clean(path)];
-  return e && { ...e, src: asset(e.src), ...(e.thumb ? { thumb: asset(e.thumb) } : {}) };
+  return e ? { ...e, src: asset(e.src), ...(e.thumb ? { thumb: asset(e.thumb) } : {}) } : null;
 }
 
 // Src d'affichage : la variante réduite du manifeste, sinon le fichier du CMS tel quel.
