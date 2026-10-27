@@ -9,10 +9,10 @@ import { getCollection } from "astro:content";
 import { renderMarkdown } from "../lib/content";
 import { image, withImageVariants } from "../lib/images";
 
-// seule la dernière news publiée est affichée, sous le pli
-const [article] = (await getCollection("articles", (a) => a.data.publie))
+// toutes les news publiées, de la plus récente à la plus ancienne, sous le pli
+const articles = (await getCollection("articles", (a) => a.data.publie))
   .sort((a, b) => b.data.date.localeCompare(a.data.date));
-const cover = article?.data.image ? image(article.data.image) : null;
+const article = articles[0];
 const dateFr = (d: string) => new Date(`${d}T12:00:00Z`).toLocaleDateString("fr-CH", { day: "numeric", month: "long", year: "numeric" });
 ---
 <Base title="Menu — Vania Jaikin Miyazaki" path="/menu" ld={{
@@ -41,12 +41,19 @@ const dateFr = (d: string) => new Date(`${d}T12:00:00Z`).toLocaleDateString("fr-
     )}
   </main>
   {article && (
-    <article id="news" class="news">
-      <p class="news-date"><time datetime={article.data.date}>{dateFr(article.data.date)}</time></p>
-      <h2>{article.data.titre}</h2>
-      {cover && <img class="news-image" src={cover.src} width={cover.w} height={cover.h} alt="" loading="lazy" />}
-      <div class="vjm-prose" set:html={withImageVariants(renderMarkdown(article.data.corps))} />
-    </article>
+    <section id="news" class="news">
+      {articles.map((a) => {
+        const cover = a.data.image ? image(a.data.image) : null;
+        return (
+          <article>
+            <p class="news-date"><time datetime={a.data.date}>{dateFr(a.data.date)}</time></p>
+            <h2>{a.data.titre}</h2>
+            {cover && <img class="news-image" src={cover.src} width={cover.w} height={cover.h} alt="" loading="lazy" />}
+            <div class="vjm-prose" set:html={withImageVariants(renderMarkdown(a.data.corps))} />
+          </article>
+        );
+      })}
+    </section>
   )}
 </Base>
 
@@ -83,6 +90,7 @@ const dateFr = (d: string) => new Date(`${d}T12:00:00Z`).toLocaleDateString("fr-
     position: relative; z-index: 1; max-width: 720px; margin: 0 auto;
     padding: clamp(48px, 10vh, 120px) var(--container-pad) var(--page-bottom);
   }
+  .news article + article { margin-top: clamp(64px, 12vh, 140px); }
   .news-date { font-family: var(--font-digital); font-size: 13px; letter-spacing: 0.08em; color: var(--fg-muted); text-transform: uppercase; }
   .news h2 {
     font-family: var(--font-heading); font-weight: var(--heading-weight); letter-spacing: var(--heading-spacing);
