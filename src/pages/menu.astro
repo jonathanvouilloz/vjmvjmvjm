@@ -9,11 +9,15 @@ import { getCollection } from "astro:content";
 import { renderMarkdown } from "../lib/content";
 import { image, withImageVariants } from "../lib/images";
 
-// toutes les news publiées, de la plus récente à la plus ancienne, sous le pli
+// toutes les news publiées sous le pli : la plus récente et celles « gardées en grand » en haut,
+// les autres en vignettes qui s'ouvrent au clic
 const articles = (await getCollection("articles", (a) => a.data.publie))
-  .sort((a, b) => b.data.date.localeCompare(a.data.date));
+  .sort((a, b) => b.data.date.localeCompare(a.data.date) || Number(b.data.enGrand) - Number(a.data.enGrand));
 const article = articles[0];
-const dateFr = (d: string) => new Date(`${d}T12:00:00Z`).toLocaleDateString("fr-CH", { day: "numeric", month: "long", year: "numeric" });
+const grandes = articles.filter((a, i) => i === 0 || a.data.enGrand);
+const petites = articles.filter((a) => !grandes.includes(a));
+const corps = (a: (typeof articles)[number]) => withImageVariants(renderMarkdown(a.data.corps));
+const dateFr = (d: string) => new Date(`${d.slice(0, 10)}T12:00:00Z`).toLocaleDateString("fr-CH", { day: "numeric", month: "long", year: "numeric" });
 ---
 <Base title="Menu — Vania Jaikin Miyazaki" path="/menu" ld={{
   "@type": "BreadcrumbList",
@@ -42,17 +46,38 @@ const dateFr = (d: string) => new Date(`${d}T12:00:00Z`).toLocaleDateString("fr-
   </main>
   {article && (
     <section id="news" class="news">
-      {articles.map((a) => {
+      {grandes.map((a) => {
         const cover = a.data.image ? image(a.data.image) : null;
         return (
           <article>
             <p class="news-date"><time datetime={a.data.date}>{dateFr(a.data.date)}</time></p>
             <h2>{a.data.titre}</h2>
             {cover && <img class="news-image" src={cover.src} width={cover.w} height={cover.h} alt="" loading="lazy" />}
-            <div class="vjm-prose" set:html={withImageVariants(renderMarkdown(a.data.corps))} />
+            <div class="vjm-prose" set:html={corps(a)} />
           </article>
         );
       })}
+      {petites.length > 0 && (
+        <div class="petites">
+          {petites.map((a) => {
+            const cover = a.data.image ? image(a.data.image) : null;
+            const html = corps(a);
+            return (
+              <details class="petite">
+                <summary>
+                  {cover && <img class="petite-image" src={cover.src} width={cover.w} height={cover.h} alt="" loading="lazy" />}
+                  <p class="news-date"><time datetime={a.data.date}>{dateFr(a.data.date)}</time></p>
+                  <h3>{a.data.titre}</h3>
+                  {/* début du texte, sans liens : rien de cliquable dans le résumé */}
+                  <p class="extrait" set:html={html.replace(/<[^>]+>/g, " ")} />
+                </summary>
+                {cover && <img class="news-image" src={cover.src} width={cover.w} height={cover.h} alt="" loading="lazy" />}
+                <div class="vjm-prose" set:html={html} />
+              </details>
+            );
+          })}
+        </div>
+      )}
     </section>
   )}
 </Base>
@@ -97,6 +122,27 @@ const dateFr = (d: string) => new Date(`${d}T12:00:00Z`).toLocaleDateString("fr-
     font-size: clamp(1.8rem, 4vw, 2.6rem); line-height: 1.15; margin: 12px 0 var(--block-gap);
   }
   .news-image { display: block; width: 100%; height: auto; margin-bottom: var(--block-gap); }
+  /* anciennes news : 3 vignettes par ligne ; une vignette ouverte prend toute la ligne */
+  .petites {
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 190px), 1fr)); gap: 40px 28px;
+    margin-top: clamp(64px, 12vh, 140px);
+  }
+  .petite summary { list-style: none; cursor: pointer; opacity: 0.85; transition: opacity 0.25s; }
+  .petite summary::-webkit-details-marker { display: none; }
+  .petite summary:hover { opacity: 1; }
+  .petite summary:focus-visible { outline: 1px solid var(--fg-muted); outline-offset: 6px; }
+  .petite-image { display: block; width: 100%; aspect-ratio: 4 / 3; object-fit: cover; margin-bottom: 10px; }
+  .petite h3 {
+    font-family: var(--font-heading); font-weight: var(--heading-weight); letter-spacing: var(--heading-spacing);
+    font-size: 1.15rem; line-height: 1.25; margin: 6px 0;
+  }
+  .extrait {
+    font-size: 15px; color: var(--fg-muted); margin: 0;
+    display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden;
+  }
+  .petite[open] { grid-column: 1 / -1; }
+  .petite[open] .petite-image, .petite[open] .extrait { display: none; }
+  .petite[open] h3 { font-size: clamp(1.8rem, 4vw, 2.6rem); line-height: 1.15; margin: 12px 0 var(--block-gap); }
   @keyframes apparition { from { opacity: 0; } to { opacity: 1; } }
   @media (prefers-reduced-motion: reduce) { main, .defiler img { animation: none; } }
 </style>

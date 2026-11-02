@@ -170,9 +170,11 @@ const articles = defineCollection({
   loader: glob({ pattern: "*.json", base: "content/articles", generateId: ({ entry }) => entry.replace(/\.json$/, "") }),
   schema: z.object({
     titre: z.string(),
-    date: day,
+    // heure facultative : départage les news du même jour (les anciennes n'en ont pas)
+    date: z.string().regex(/^\d{4}-\d{2}-\d{2}(T\d{2}:\d{2})?$/),
     publie: z.boolean().default(true),
     image: image.optional(),
+    enGrand: z.boolean().default(false),
     corps: z.string(),
   }),
 });

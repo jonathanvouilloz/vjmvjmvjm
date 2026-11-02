@@ -73,9 +73,10 @@ collections:
     sortable_fields: [date, titre]
     fields:
       - { name: titre, label: Titre, widget: string }
-      - { name: date, label: "Date de publication", widget: datetime, time_format: false, date_format: "YYYY-MM-DD", format: "YYYY-MM-DD" }
+      - { name: date, label: "Date et heure de publication", widget: datetime, date_format: "YYYY-MM-DD", time_format: "HH:mm", format: "YYYY-MM-DDTHH:mm", hint: "L'heure départage deux news du même jour : la plus tardive passe au-dessus." }
       - { name: publie, label: Publié, widget: boolean, default: true }
       - { name: image, label: "Image principale", widget: image, required: false }
+      - { name: enGrand, label: "Garder en grand", widget: boolean, default: false, hint: "La news la plus récente est toujours en grand ; les autres passent en petit, sauf si cette case est cochée." }
       - name: corps
         label: Texte
         widget: markdown
