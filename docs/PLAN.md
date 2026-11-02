@@ -9,6 +9,7 @@
 | Itération 5 — contenu éditable + Coin lecture + news + bio FR/EN | DONE (CMS à activer) | docs/features/iteration-5-contenu-editable.md |
 | Itération 6 — schémas CMS figés (playlists, textes riches, vignettes, « i » Kinematik) | DONE | docs/features/iteration-6-schemas-cms.md |
 | Dernière news sous le menu + particules iirrm | DONE (branche `news-particules`, à fusionner) | docs/features/news-particules.md |
+| News en grille + onglet menu + heure | DONE (code, rendu non vérifié) | docs/features/news-grille-heure.md |
 | Site propre v1 — migration Astro (une URL par contenu, SEO) | EN COURS (code fait ; recette 4.1, fusion 4.3, Search Console 4.4 à faire par Jonathan) | docs/features/migration-astro.md |
 
 ## Cadre itération 2
