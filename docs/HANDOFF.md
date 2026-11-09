@@ -1,11 +1,10 @@
-# HANDOFF — 2026-10-20
+# HANDOFF — 2026-11-09
 
 ## Features actives
 | Feature | Fichier | Statut |
 |---------|---------|--------|
-| Migration Astro (site propre v1, une URL par contenu, SEO) | docs/features/migration-astro.md | **EN COURS** — code fini sur la branche `astro` (HEAD ff75e3b, non poussée) ; reste la recette, la fusion et Search Console |
-| Itération 7 — tout éditable dans le CMS | docs/features/iteration-7-tout-editable.md | DONE — connexion `/admin/` à activer |
+| Migration Netlify vers le compte de Vania | docs/features/migration-netlify-vania.md | **EN COURS** — opérations à faire par Jonathan |
 
 ## Reprendre ici
-Migration Astro : les tâches restantes sont à Jonathan (`cerveau/10-Projets/wania/wania-human.md`) : 4.1 recette visuelle, vérification d'une deploy preview Netlify (URL sans slash final, formulaire), 4.3 fusion dans `main` après `git merge main`, 4.4 Search Console.
-Dernier commit de code : ff75e3b fix: final review fixes (generique 0, node pin, pop-up focus, news window helper, a11y)
+Migration Netlify : les tâches de Jonathan sont dans `cerveau/10-Projets/wania/wania-human.md`. Après la bascule : supprimer `.netlify/state.json`.
+Commit : 534bc5e docs(news-grille-heure): fiche feature, index, plan et décisions
